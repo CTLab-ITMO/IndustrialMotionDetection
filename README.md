@@ -1,14 +1,11 @@
 # IndustrialMotionDetection
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
+<a href="https://itmo.ru/"><img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg"></a>
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
-
-==============================
-<div style="display: flex; justify-content: center;">
+<p align="center">
   <img src="examples/talk_on_phone.jpg" width="300">
   <img src="examples/people_on_roof.jpg" width="300">
-</div>
+</p>
 
 
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
