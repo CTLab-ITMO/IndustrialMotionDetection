@@ -14,4 +14,15 @@ python-dotenv
 scikit-learn
 tqdm
 typer
--e .
+torch
+torchvision
+torchaudio
+decord
+timm
+opencv-python
+transformers
+seaborn
+tqdm
+PyAV
+matplotlib
+# -e .
