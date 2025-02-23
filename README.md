@@ -1,5 +1,10 @@
 IndustrialMotionDetection
 ==============================
+<div style="display: flex; justify-content: center;">
+  <img src="examples/talk_on_phone.jpg" width="300">
+  <img src="examples/people_on_roof.jpg" width="300">
+</div>
+
 
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
