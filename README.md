@@ -1,3 +1,1 @@
-# IndustrialMotionDete
-
-test commit
+# IndustrialMotionDetection
