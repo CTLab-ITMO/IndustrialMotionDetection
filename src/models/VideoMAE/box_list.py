@@ -1,5 +1,3 @@
-#@title BoxList
-
 # Modified from https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/structures/bounding_box.py
 import torch
 
