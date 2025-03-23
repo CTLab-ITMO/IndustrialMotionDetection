@@ -5,6 +5,7 @@ import yaml
 import cv2
 import pandas as pd
 from tqdm.auto import tqdm
+from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from config import YamlConfigReader
 from utils import AverageMeter, get_size, is_awscli_installed
@@ -14,25 +15,32 @@ import math
 
 class MEVAProcessor:
     def __init__(self, args: argparse.Namespace):
-        self.config = YamlConfigReader(args.config).get_all()
+        self.config_source = YamlConfigReader(args.config) 
+        self.params = self.config_source.get_all()
         
-        self.videos_root = self.config['videos_root']
-        self.annotations_folder = self.config['annotations_folder']
+        self.videos_root = self.params['videos_root']
+        self.annotations_folder = self.params['annotations_folder']
         if not os.path.isdir(self.annotations_folder):
             message = f'Annotations folder not exist {self.annotations_folder}'
             self.logger.error(message)
             raise Exception(message)
         
-        self.result_folder = self.config['result_folder']
+        self.result_folder = self.params['result_folder']
         os.makedirs(self.result_folder, exist_ok=True)
         
-        self.target_activities = self.config['target_activities']
-        self.padding_frames = self.config['padding_frames']
-        self.bbox_area_limit = self.config['bbox_area_limit']
-        self.display_annotations = self.config['display_annotations']
+        self.target_activities = self.params['target_activities']
+        self.padding_frames = self.params['padding_frames']
+        self.bbox_area_limit = self.params['bbox_area_limit']
+        self.display_annotations = self.params['display_annotations']
+        
+        self.train_df_path = os.path.join(self.result_folder, 'train.csv')
+        self.test_df_path =  os.path.join(self.result_folder, 'test.csv')
+        self.test_size = self.params['test_size']
+        self.split_seed = self.params['split_seed']
         
         SHOW_LOG = True
         self.logger = Logger(SHOW_LOG).get_logger(__name__)
+        self.logger.info("MEVAProcessor is ready")
 
     def parse_geometries(self, annotation_root: str, annot_filename: str) -> tuple[dict, dict]:
         """
@@ -341,6 +349,51 @@ class MEVAProcessor:
         self.logger.info(f"Deleting folder {folder}....")
         os.system(f"rm -rf {folder}")
         
+    def split_train_test(self) -> bool:
+        if not os.path.exists(self.annot_df_path):
+            self.logger.error('Annotations file not exist, split omitted')
+            return
+        
+        annotations = pd.read_csv(self.annot_df_path)
+        
+        train_df = pd.DataFrame()
+        test_df = pd.DataFrame()
+        
+        categories = annotations['action_category'].unique()
+        
+        for category in categories:
+            category_df = annotations[annotations['action_category'] == category]
+            
+            unique_videos = category_df['video_path'].unique()
+            
+            train_videos, test_videos = train_test_split(
+                unique_videos, test_size=self.test_size, random_state=self.split_seed)
+            
+            train_category_df = category_df[category_df['video_path'].isin(train_videos)]
+            test_category_df = category_df[category_df['video_path'].isin(test_videos)]
+            
+            train_df = pd.concat([train_df, train_category_df])
+            test_df = pd.concat([test_df, test_category_df])
+        
+        train_df.to_csv(self.train_df_path, index=False)
+        test_df.to_csv(self.test_df_path, index=False)
+        
+        splits_created = (os.path.isfile(self.train_df_path) 
+                          and os.path.isfile(self.test_df_path)) 
+        
+        if splits_created:
+            self.logger.info("train and test data is ready")
+            
+            self.config_source.update_from_dict({
+                'train': self.train_df_path,
+                'test': self.test_df_path
+            })
+            
+            return splits_created
+        else:
+            self.logger.error("train and test is not ready")
+            return False
+        
     def run(self) -> None:
         self.logger.info(f"Current working directory: {os.getcwd()}")
         
@@ -353,9 +406,9 @@ class MEVAProcessor:
         all_annotations_df = pd.DataFrame(columns=[
             'video_path', 'keyframe_id', 'track_id', 'action_category', 'xmin', 'ymin', 'xmax', 'ymax'])
         
-        annot_df_path = os.path.join(self.result_folder, 'annotations.csv')
-        if os.path.exists(annot_df_path):
-            all_annotations_df = pd.read_csv(annot_df_path)
+        self.annot_df_path = os.path.join(self.result_folder, 'annotations.csv')
+        if os.path.exists(self.annot_df_path):
+            all_annotations_df = pd.read_csv(self.annot_df_path)
             print("Annotations loaded from existing file.")
 
         for i, curr_annotation_root in enumerate(self.get_annotation_dirs(self.annotations_folder)):
@@ -368,7 +421,7 @@ class MEVAProcessor:
                 continue
 
             self.logger.info(f"Processing {curr_annotation_root} ...")
-            curr_video_dir = f'{self.videos_root}/{date}'
+            curr_video_dir = os.path.join(self.videos_root, date)
 
             elapsed = self.download_meva_data_folder_for_date(date, curr_video_dir)
             self.logger.info(
@@ -377,7 +430,7 @@ class MEVAProcessor:
                 f"\t time elapsed: {elapsed} sec"
             )
 
-            video_result_folder = f"{self.result_folder}/{date}"
+            video_result_folder = os.path.join(self.result_folder, date)
             os.makedirs(video_result_folder, exist_ok=True)
 
             annotations_df = self.process_annotations(
@@ -387,12 +440,21 @@ class MEVAProcessor:
             all_annotations_df = pd.concat(
                 [all_annotations_df, annotations_df],
                 ignore_index=True)
+            
+            # save annotations csv file
+            all_annotations_df.to_csv(self.annot_df_path, index=False)
+            self.logger.info(f"Saved annotations to CSV: {self.annot_df_path}")
 
-            all_annotations_df.to_csv(annot_df_path, index=False)
-            self.logger.info(f"Saved annotations to CSV: {annot_df_path}")
+            # split annotations into train and test subsets
+            self.split_train_test()
 
+            # save configuration updates
+            self.config_source.save()
+
+            # log resulting data size
             self.logger.info(f"{self.result_folder=} size: {get_size(self.result_folder):.2f} GB")
 
+            # delete initial video folder
             self.delete_folder_recursively(curr_video_dir)
             self.logger.info(
                 "Deletion completed:\n"

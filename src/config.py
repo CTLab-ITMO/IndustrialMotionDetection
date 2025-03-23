@@ -52,3 +52,53 @@ class YamlConfigReader:
             raise ValueError("Configuration not loaded. Call load() first.")
 
         return self.config
+
+    def update(self, key, value):
+        """
+        Update a value in the configuration by key.
+
+        :param key: The key to update in the configuration.
+        :param value: The new value to set for the key.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        self.config[key] = value
+
+    def update_from_dict(self, update_dict):
+        """
+        Update the configuration with key-value pairs from a dictionary.
+
+        :param update_dict: A dictionary containing key-value pairs to update in the configuration.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        self.config.update(update_dict)
+
+    def save(self):
+        """
+        Save the current configuration back to the YAML file.
+
+        :raises yaml.YAMLError: If there is an error writing the YAML file.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        with open(self.config_file_path, 'w') as file:
+            try:
+                yaml.safe_dump(self.config, file, default_flow_style=False)
+            except yaml.YAMLError as e:
+                raise yaml.YAMLError(f"Error writing YAML file: {e}")
+
+    def delete(self, key):
+        """
+        Delete a key from the configuration.
+
+        :param key: The key to delete from the configuration.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        if key in self.config:
+            del self.config[key]
