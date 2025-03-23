@@ -8,7 +8,11 @@ from tqdm.auto import tqdm
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
 from config import YamlConfigReader
-from utils import AverageMeter, get_size, is_awscli_installed
+from utils import (AverageMeter, 
+                   get_size, 
+                   is_awscli_installed, 
+                   get_last_n_path_elements,
+                   get_leaf_dirs)
 from logger import Logger
 import math
 
@@ -334,10 +338,6 @@ class MEVAProcessor:
 
         return pd.DataFrame(rows)
 
-    def get_annotation_dirs(self, root_annotations_folder: str) -> list:
-        return [root for root, dirs, _ in os.walk(root_annotations_folder)
-                if len(dirs) == 0]
-
     def download_meva_data_folder_for_date(self, date: str, dest: str) -> float:
         assert is_awscli_installed()
         self.logger.info(f'Downloading {date} from s3://mevadata-public-01/drops-123-r13 ...')
@@ -398,8 +398,8 @@ class MEVAProcessor:
         self.logger.info(f"Current working directory: {os.getcwd()}")
         
         already_processed = set(
-            list(map(lambda x: '/'.join(x.split('/')[-2:]), 
-                     self.get_annotation_dirs(self.result_folder))))
+            list(map(lambda x: get_last_n_path_elements(x, 2), 
+                     get_leaf_dirs(self.result_folder))))
         self.logger.info(f'{already_processed=}')
 
         # Initialize an empty dataframe to store all annotations
@@ -411,10 +411,10 @@ class MEVAProcessor:
             all_annotations_df = pd.read_csv(self.annot_df_path)
             print("Annotations loaded from existing file.")
 
-        for i, curr_annotation_root in enumerate(self.get_annotation_dirs(self.annotations_folder)):
+        for i, curr_annotation_root in enumerate(get_leaf_dirs(self.annotations_folder)):
             if i == 1: break
 
-            date = '/'.join(curr_annotation_root.split('/')[-2:])
+            date = get_last_n_path_elements(curr_annotation_root, 2)
             
             # skip already processed folders
             if date in already_processed: 

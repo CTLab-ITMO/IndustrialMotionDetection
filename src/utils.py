@@ -73,3 +73,48 @@ def is_awscli_installed():
     except FileNotFoundError:
         print("awscli is NOT installed.")
         return False
+
+
+def get_last_n_path_elements(path: str, n: int) -> str:
+    """
+    Extracts the last `n` elements from a given file path 
+    and joins them into a new path.
+
+    This method normalizes the input path 
+    and then splits it into its constituent elements. 
+    It selects the last `n` elements and joins them
+    back into a path using the operating system's path separator.
+
+    Args:
+        path (str): The input file path from which to extract elements.
+        n (int): The number of trailing path elements to extract. 
+                If `n` exceeds the number of elements
+                in the path, the entire normalized path is returned.
+
+    Returns:
+        str: A new path consisting of the last `n` elements of the input path, 
+                joined by the OS path separator.
+    """
+    return os.sep.join(os.path.normpath(path).split(os.sep)[-n:])
+
+
+def get_leaf_dirs(root_folder: str) -> list:
+    """
+    Retrieves a list of directories within the specified root folder 
+    that do not contain any subdirectories.
+
+    This method traverses the directory tree 
+    starting from `root_folder` and identifies all directories
+    that are "leaf" nodes (i.e., directories with no subdirectories). 
+    These directories are returned as a list of paths.
+
+    Args:
+        root_folder (str): The path to the root directory 
+                from which to start searching for leaf directories.
+
+    Returns:
+        list: A list of paths to directories 
+                that have no subdirectories. Each path is a string.
+    """
+    return [root for root, dirs, _ in os.walk(root_folder)
+            if len(dirs) == 0]
