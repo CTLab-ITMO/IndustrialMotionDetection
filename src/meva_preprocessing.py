@@ -3,6 +3,7 @@ import time
 import argparse
 import yaml
 import cv2
+import shutil
 import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.model_selection import train_test_split
@@ -344,11 +345,7 @@ class MEVAProcessor:
         start = time.time()
         os.system(f'aws s3 sync --no-sign-request s3://mevadata-public-01/drops-123-r13/{date} {dest}')
         return time.time() - start
-
-    def delete_folder_recursively(self, folder: str) -> None:
-        self.logger.info(f"Deleting folder {folder}....")
-        os.system(f"rm -rf {folder}")
-        
+    
     def split_train_test(self) -> bool:
         if not os.path.exists(self.annot_df_path):
             self.logger.error('Annotations file not exist, split omitted')
@@ -455,7 +452,9 @@ class MEVAProcessor:
             self.logger.info(f"{self.result_folder=} size: {get_size(self.result_folder):.2f} GB")
 
             # delete initial video folder
-            self.delete_folder_recursively(curr_video_dir)
+            self.logger.info(f"Deleting folder {curr_video_dir} ...")
+            shutil.rmtree(curr_video_dir)
+            
             self.logger.info(
                 "Deletion completed:\n"
                 f"\t {self.videos_root} size: {get_size(self.videos_root):.2f} GB"
