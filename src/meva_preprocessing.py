@@ -38,6 +38,7 @@ class MEVAProcessor:
         self.bbox_area_limit = self.params['bbox_area_limit']
         self.display_annotations = self.params['display_annotations']
         
+        self.annot_df_path = os.path.join(self.result_folder, 'annotations.csv')
         self.train_df_path = os.path.join(self.result_folder, 'train.csv')
         self.test_df_path =  os.path.join(self.result_folder, 'test.csv')
         self.test_size = self.params['test_size']
@@ -403,7 +404,8 @@ class MEVAProcessor:
         all_annotations_df = pd.DataFrame(columns=[
             'video_path', 'keyframe_id', 'track_id', 'action_category', 'xmin', 'ymin', 'xmax', 'ymax'])
         
-        self.annot_df_path = os.path.join(self.result_folder, 'annotations.csv')
+        self.config_source.update_from_dict({'annotations_csv': self.annot_df_path})
+        
         if os.path.exists(self.annot_df_path):
             all_annotations_df = pd.read_csv(self.annot_df_path)
             print("Annotations loaded from existing file.")
