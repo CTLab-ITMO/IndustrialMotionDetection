@@ -20,6 +20,9 @@ import math
 
 class MEVAProcessor:
     def __init__(self, args: argparse.Namespace):
+        SHOW_LOG = True
+        self.logger = Logger(SHOW_LOG).get_logger(__name__)
+        
         self.config_source = YamlConfigReader(args.config) 
         self.params = self.config_source.get_all()
         
@@ -44,8 +47,6 @@ class MEVAProcessor:
         self.test_size = self.params['test_size']
         self.split_seed = self.params['split_seed']
         
-        SHOW_LOG = True
-        self.logger = Logger(SHOW_LOG).get_logger(__name__)
         self.logger.info("MEVAProcessor is ready")
 
     def parse_geometries(self, annotation_root: str, annot_filename: str) -> tuple[dict, dict]:
