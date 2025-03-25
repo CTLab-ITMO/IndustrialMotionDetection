@@ -21,7 +21,7 @@ def get_annoted_frames(video_path, output_dir):
     print(f'Всего сохранено кадров: {frame_count}')
 
 
-video_path = '/data/video2.mp4'
-output_dir = '/data/frames2'
+video_path = '/content/video2.mp4'
+output_dir = '/content/frames2'
 os.makedirs(output_dir, exist_ok=True)
 get_annoted_frames(video_path, output_dir)

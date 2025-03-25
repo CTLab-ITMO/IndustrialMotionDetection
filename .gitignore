@@ -192,4 +192,5 @@ models/SkeletonActionRecognition/pose_estimation/yolo
 models/SkeletonActionRecognition/pose_estimation/yolo11m-pose_openvino_model
 models/SkeletonActionRecognition/segmentation/checkpoints
 models/SkeletonActionRecognition/yolo11m-pose.pt
-
+models/SkeletonActionRecognition/content/pip_175k
+models/SkeletonActionRecognition/segmentation/sam2/

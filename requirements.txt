@@ -15,3 +15,5 @@ scikit-learn
 tqdm
 typer
 -e .
+torch
+opencv-python

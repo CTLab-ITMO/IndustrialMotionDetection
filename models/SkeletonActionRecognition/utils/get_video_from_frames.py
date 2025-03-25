@@ -13,7 +13,7 @@ first_frame = cv2.imread(frames[0])
 height, width, layers = first_frame.shape
 
 fourcc = cv2.VideoWriter_fourcc('F', 'M', 'P', '4')
-output_video = cv2.VideoWriter('/data/annotated_video2.mp4',
+output_video = cv2.VideoWriter('/content/annotated_video2.mp4',
                                fourcc, 30, (width, height))
 
 for frame in frames:

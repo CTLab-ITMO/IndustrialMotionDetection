@@ -195,11 +195,11 @@ def download_ir_model(model_xml_url: str, destination_folder: PathLike = None) -
 
 def normalize_minmax(data):
     """
-    Normalizes the values in `data` between 0 and 1
+    Normalizes the values in `content` between 0 and 1
     """
     if data.max() == data.min():
         raise ValueError(
-            "Normalization is not possible because all elements of" f"`data` have the same value: {data.max()}.")
+            "Normalization is not possible because all elements of" f"`content` have the same value: {data.max()}.")
     return (data - data.min()) / (data.max() - data.min())
 
 
@@ -519,7 +519,7 @@ def viz_result_image(
 def show_array(frame: np.ndarray, display_handle=None):
     """
     Display array `frame`. Replace information at `display_handle` with `frame`
-    encoded as jpeg image. `frame` is expected to have data in BGR order.
+    encoded as jpeg image. `frame` is expected to have content in BGR order.
 
     Create a display_handle with: `display_handle = display(display_id=True)`
     """

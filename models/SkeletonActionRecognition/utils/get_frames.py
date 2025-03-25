@@ -2,10 +2,10 @@ import cv2
 import os
 
 # Путь к видеофайлу
-video_path = '/data/video2.mp4'
+video_path = '/content/video2.mp4'
 
 # Директория для сохранения кадров
-output_dir = '/data/frames2'
+output_dir = '/content/frames2'
 os.makedirs(output_dir, exist_ok=True)
 
 # Открываем видео
