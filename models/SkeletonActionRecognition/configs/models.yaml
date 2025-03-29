@@ -1,0 +1,33 @@
+segmentation:
+  config_path: "CIDAS/clipseg-rd64-refined"
+  call_openvino: False
+
+depth_estimation:
+  model_path: "depth_estimation/Depth-Anything-V2/checkpoints/depth_anything_v2_vits.pth"
+  config_path: "vits"
+  optimize_for: "speed"
+  call_openvino: False
+
+pose_estimation:
+  model_path: "pose_estimation/yolo/yolo11m-pose.pt"
+  threshold: 0.7
+  use_gpu: true
+  call_openvino: False
+
+action_recognizer:
+  threshold_distance: 10
+
+dataset:
+  frames_path: "/home/username/dataset/actions/frames"
+  videos_path: "/home/username/dataset/actions/videos"
+  train_labels_path: "/home/username/dataset/actions/train.csv"
+  valid_labels_path: "/home/username/dataset/actions/valid.csv"
+  action_dataset: "/home/username/dataset/actions"
+  all_labels_path: "/home/username/dataset/actions/action_dataset/labels.npy"
+
+
+settings:
+  device: "cpu"
+  log_dir: "logs/"
+  rtsp: "data/frames_eating"
+  frames_output_dir: "data/annotated_frames_eating"
