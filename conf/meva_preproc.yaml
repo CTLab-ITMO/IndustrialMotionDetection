@@ -1,15 +1,15 @@
-result_folder: data/MEVA/meva_processed
-videos_root: data/MEVA/mevadata-public-01/drops-123-r13
+annotations_csv: data/MEVA/meva_processed/annotations.csv
 annotations_folder: data/MEVA/meva-data-repo/annotation/DIVA-phase-2/MEVA/kitware-meva-training
-target_activities: [
-  person_talks_on_phone, 
-  person_texts_on_phone,
-  person_picks_up_object,
-  person_reads_document,
-  person_interacts_with_laptop
-]
-padding_frames: 30
 bbox_area_limit: 10000
-display_annotations: False
-test_size: 0.2
+display_annotations: false
+padding_frames: 30
+result_folder: data/MEVA/meva_processed
 split_seed: 42
+target_activities:
+- person_talks_on_phone
+- person_texts_on_phone
+- person_picks_up_object
+- person_reads_document
+- person_interacts_with_laptop
+test_size: 0.2
+videos_root: data/MEVA/mevadata-public-01/drops-123-r13
