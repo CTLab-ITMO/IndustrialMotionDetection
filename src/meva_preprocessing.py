@@ -3,6 +3,7 @@ import time
 import argparse
 import yaml
 import cv2
+from typing import Tuple, Dict
 import shutil
 import pandas as pd
 from tqdm.auto import tqdm
@@ -49,7 +50,7 @@ class MEVAProcessor:
         
         self.logger.info("MEVAProcessor is ready")
 
-    def parse_geometries(self, annotation_root: str, annot_filename: str) -> tuple[dict, dict]:
+    def parse_geometries(self, annotation_root: str, annot_filename: str) -> Tuple[Dict, Dict]:
         """
         Parse geometry annotations for a given filename.
         Schema Structure:
@@ -93,7 +94,7 @@ class MEVAProcessor:
                 
         return geometries, track_bbox_area.get_average()
 
-    def find_activities(self, annotation_root: str, annot_filename: str) -> tuple[dict, dict]:
+    def find_activities(self, annotation_root: str, annot_filename: str) -> Tuple[Dict, Dict]:
         """
         Find all activities with their metadata.
         - { act { actN: {activity_name: likelihood, …},
@@ -194,7 +195,8 @@ class MEVAProcessor:
         rows = []
 
         for fname in tqdm(os.listdir(annotation_root),
-                        desc='Iterating dir with annotations...'):
+                          desc='Iterating dir with annotations...',
+                          leave=False):
             # fname should end with .activities.yml
             if not fname.endswith('.activities.yml'):
                 continue
@@ -329,7 +331,7 @@ class MEVAProcessor:
                                               color=(0, 255, 0), 
                                               thickness=2)
                             
-                        rows.extend(temporal_rows.items())
+                        rows.extend(list(temporal_rows.values()))
 
                     out.write(frame)
 
@@ -342,12 +344,16 @@ class MEVAProcessor:
         return pd.DataFrame(rows)
 
     def download_meva_data_folder_for_date(self, date: str, dest: str) -> float:
-        assert is_awscli_installed()
+        if not is_awscli_installed():
+            error_message = 'awscli not installed'
+            self.logger.error(error_message)
+            raise Exception(error_message)
+         
         self.logger.info(f'Downloading {date} from s3://mevadata-public-01/drops-123-r13 ...')
         start = time.time()
         os.system(f'aws s3 sync --no-sign-request s3://mevadata-public-01/drops-123-r13/{date} {dest}')
         return time.time() - start
-    
+
     def split_train_test(self) -> bool:
         if not os.path.exists(self.annot_df_path):
             self.logger.error('Annotations file not exist, split omitted')
@@ -412,12 +418,15 @@ class MEVAProcessor:
             print("Annotations loaded from existing file.")
 
         for i, curr_annotation_root in enumerate(get_leaf_dirs(self.annotations_folder)):
-            if i == 1: break
+            # if i == 1: break
 
             date = get_last_n_path_elements(curr_annotation_root, 2)
             
             # skip already processed folders
             if date in already_processed: 
+                continue
+            
+            if date != '2018-03-11/12': # and date != '2018-03-15/16' and date != '2018-03-15/14':
                 continue
 
             self.logger.info(f"Processing {curr_annotation_root} ...")
@@ -445,12 +454,6 @@ class MEVAProcessor:
             all_annotations_df.to_csv(self.annot_df_path, index=False)
             self.logger.info(f"Saved annotations to CSV: {self.annot_df_path}")
 
-            # split annotations into train and test subsets
-            self.split_train_test()
-
-            # save configuration updates
-            self.config_source.save()
-
             # log resulting data size
             self.logger.info(f"{self.result_folder=} size: {get_size(self.result_folder):.2f} GB")
 
@@ -462,6 +465,12 @@ class MEVAProcessor:
                 "Deletion completed:\n"
                 f"\t {self.videos_root} size: {get_size(self.videos_root):.2f} GB"
             )
+            
+        # save configuration updates
+        self.config_source.save()
+            
+        # split annotations into train and test subsets
+        self.split_train_test()
 
 
 def main(args):
