@@ -56,7 +56,6 @@ def get_size(start_path: str) -> float:
 
 def is_awscli_installed():
     try:
-        # Run the 'aws --version' command
         result = subprocess.run(
             ["aws", "--version"], 
             stdout=subprocess.PIPE, 
@@ -64,14 +63,10 @@ def is_awscli_installed():
             text=True)
         
         if result.returncode == 0:
-            print("awscli is installed.")
-            print(f"Version: {result.stdout.strip()}")
             return True
         else:
-            print("awscli is NOT installed.")
             return False
     except FileNotFoundError:
-        print("awscli is NOT installed.")
         return False
 
 
