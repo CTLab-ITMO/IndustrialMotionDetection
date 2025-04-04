@@ -1,32 +1,30 @@
-[build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
-[project]
-name = "src"
-version = "0.0.1"
+[tool.poetry]
+name = "industrialmotiondetection"
+version = "0.1.0"
 description = "Motion Detection Library"
-authors = [
-  { name = "CTLab-ITMO" },
-]
-license = { file = "LICENSE" }
+authors = ["CTLab-ITMO"]
+license = "LICENSE"
 readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License"
-]
-requires-python = "~=3.10"
 
-[tool.black]
-line-length = 99
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.venv
-)/
-'''
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+pandas = "^2.2.3"
+scikit-learn = "^1.6.1"
+opencv-python = "^4.11.0.86"
+pyyaml = "^6.0.2"
+tqdm = "^4.67.1"
+awscli = "^1.38.27"
+ipykernel = "^6.29.5"
+matplotlib = "3.9"
+seaborn = "^0.13.2"
+torch = {version = "^2.6.0+cpu", source = "pytorch_cpu"}
+torchvision = {version = "^0.21.0+cpu", source = "pytorch_cpu"}
 
-[tool.ruff.lint.isort]
-known_first_party = ["src"]
-force_sort_within_sections = true
+[[tool.poetry.source]]
+name = "pytorch_cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
