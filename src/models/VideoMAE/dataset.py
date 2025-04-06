@@ -1,12 +1,15 @@
-import torch
-from torch.utils.data.dataloader import default_collate
-from collections import defaultdict
-import decord
-from torch.utils.data import IterableDataset
+import random
 import pandas as pd
 import numpy as np
-import random
+import torch
+import decord
+from collections import defaultdict
+from torch.utils.data.dataloader import default_collate
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data import IterableDataset
 from box_list import BoxList
+from transformers import AutoImageProcessor
+
 
 def sample_frame_indices(clip_len, frame_sample_rate, seg_len):
     '''
@@ -136,3 +139,62 @@ def collate_fn(batch):
         "bbox": bbox_list, # [B, BoxList[N]]
         "path": path_list
     }
+
+
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+    
+
+def get_dataloaders(train_csv_file_path: str, 
+                    val_csv_file_path: str,
+                    num_classes: str,
+                    batch_size, 
+                    seed, 
+                    frame_sample_rate=1, 
+                    clip_len=16,
+                    val_epoch_size_ratio: float = 1.0,
+                    train_epoch_size_ratio: float = 1.0):
+    
+    image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
+
+    image_datasets = dict()
+    image_datasets['train'] = RandomDatasetDecord(
+        train_csv_file_path,
+        epoch_size_ratio=train_epoch_size_ratio,
+        video_transform=image_processor,
+        frame_sample_rate=frame_sample_rate,
+        clip_len=clip_len,
+        num_classes=num_classes)
+
+    image_datasets['test'] = RandomDatasetDecord(
+        val_csv_file_path,
+        epoch_size_ratio=val_epoch_size_ratio,
+        video_transform=image_processor,
+        frame_sample_rate=frame_sample_rate,
+        clip_len=clip_len,
+        num_classes=num_classes)
+    
+    g = torch.Generator()
+    g.manual_seed(seed)
+    
+    dataloaders = dict()
+    dataloaders['train'] = DataLoader(
+        image_datasets['train'],
+        batch_size=batch_size,
+        pin_memory=True,
+        drop_last=True,
+        collate_fn=collate_fn,
+        worker_init_fn=seed_worker,
+        generator=g)
+    
+    dataloaders['test'] = DataLoader(
+        image_datasets['test'],
+        batch_size=batch_size,
+        pin_memory=True,
+        collate_fn=collate_fn,
+        worker_init_fn=seed_worker,
+        generator=g)
+
+    return dataloaders
