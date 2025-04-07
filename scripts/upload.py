@@ -44,8 +44,19 @@ def create_kaggle_dataset(dataset_name):
     if not os.path.isdir(result_folder):
         logger.error(f"Error: {result_folder} dir not found")
         sys.exit()
-    
+
     try:
+        send_folder_path = os.path.join(result_folder, os.pardir, 'meva_send')
+        os.makedirs(send_folder_path, exist_ok=True)
+        logger.info(f"Created folder for kaggle: {send_folder_path}")
+
+        # Zip send folder path
+        processed_zip_path = f"{send_folder_path}/meva-processed.zip"
+        if not os.path.exists(processed_zip_path):            
+            zip_command = f"cd {result_folder} && zip -r {processed_zip_path} ."
+            subprocess.run(zip_command, shell=True, check=True)
+            logger.info(f"Zipped processed folder {processed_zip_path}")
+        
         # Create dataset-metadata.json
         metadata = {
             "title": dataset_name,
@@ -54,13 +65,14 @@ def create_kaggle_dataset(dataset_name):
         }
         metadata_filename = "dataset-metadata.json"
         
-        metadata_path = os.path.join(result_folder, metadata_filename)
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        logger.info(f"Created metadata file: {metadata_path}")
+        metadata_path = os.path.join(send_folder_path, metadata_filename)
+        if not os.path.exists(metadata_path):
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=2)
+            logger.info(f"Created metadata file: {metadata_path}")
         
         # Upload to Kaggle using kaggle api
-        upload_command = f"kaggle datasets create -p {result_folder} --dir-mode zip"
+        upload_command = f"kaggle datasets create -u -p {send_folder_path} --dir-mode zip"
         subprocess.run(upload_command, shell=True, check=True)
         logger.info("Dataset upload initiated successfully!")
         
