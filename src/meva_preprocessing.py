@@ -298,7 +298,7 @@ class MEVAProcessor:
                                 max_bbox_area = bbox_area
 
                             temporal_rows[actor_id] = {
-                                'video_path': output_video_path,
+                                'video_path': get_last_n_path_elements(output_video_path, 3),
                                 'keyframe_id': frame_num - start_frame,
                                 'track_id': actor_id,
                                 'action_category': activity['action_category'],
@@ -361,25 +361,40 @@ class MEVAProcessor:
         
         annotations = pd.read_csv(self.annot_df_path)
         
-        train_df = pd.DataFrame()
-        test_df = pd.DataFrame()
+        assigned_videos = set()
+        train, test = [], []
         
-        categories = annotations['action_category'].unique()
+        # Get sorted actions by rarity (ascending video count)
+        actions = sorted(
+            annotations.groupby('action_category')['video_path'].nunique().items(),
+            key=lambda x: x[1])
         
-        for category in categories:
-            category_df = annotations[annotations['action_category'] == category]
+        for action, _ in actions:
+            # Get videos with this action, sorted by frame count (descending)
+            videos = (annotations[annotations['action_category'] == action]
+                        .groupby('video_path').size()
+                        .sort_values(ascending=False)
+                        .reset_index(name='frame_count'))
             
-            unique_videos = category_df['video_path'].unique()
+            videos = videos[~videos['video_path'].isin(assigned_videos)]
+            if videos.empty:
+                continue
+                
+            n_test = max(1, round(len(videos) * self.test_size))
+            n_train = len(videos) - n_test
             
-            train_videos, test_videos = train_test_split(
-                unique_videos, test_size=self.test_size, random_state=self.split_seed)
+            train_videos = videos.iloc[:n_train]['video_path']
+            test_videos = videos.iloc[n_train:n_train+n_test]['video_path']
             
-            train_category_df = category_df[category_df['video_path'].isin(train_videos)]
-            test_category_df = category_df[category_df['video_path'].isin(test_videos)]
+            assigned_videos.update(train_videos)
+            assigned_videos.update(test_videos)
             
-            train_df = pd.concat([train_df, train_category_df])
-            test_df = pd.concat([test_df, test_category_df])
-        
+            train.append(annotations[annotations['video_path'].isin(train_videos)])
+            test.append(annotations[annotations['video_path'].isin(test_videos)])
+
+        train_df = pd.concat(train)
+        test_df = pd.concat(test)
+
         train_df.to_csv(self.train_df_path, index=False)
         test_df.to_csv(self.test_df_path, index=False)
         
