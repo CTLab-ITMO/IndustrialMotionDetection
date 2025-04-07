@@ -21,6 +21,9 @@ torch = {version = "^2.6.0+cpu", source = "pytorch_cpu"}
 torchvision = {version = "^0.21.0+cpu", source = "pytorch_cpu"}
 kaggle = "^1.7.4.2"
 python-dotenv = "^1.1.0"
+timm = "^1.0.15"
+pytorchvideo = "^0.1.5"
+jupyter = "^1.1.1"
 
 [[tool.poetry.source]]
 name = "pytorch_cpu"
