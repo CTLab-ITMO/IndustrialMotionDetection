@@ -120,8 +120,6 @@ class RandomDatasetDecord(IterableDataset):
             group_key = random.choices(self.groups, weights=self.group_weights, k=1)[0]
             video_path, track_id = group_key
             
-            print(f"{video_path=}")
-            
             group_annots = self.grouped_data.get_group(group_key)
             video_annots = self.data.loc[self.data["video_path"] == video_path]
             
@@ -137,8 +135,7 @@ class RandomDatasetDecord(IterableDataset):
             del video_src
             
             keyframe_id = (start_frame_id + end_frame_id) // 2
-            frame_video_annots = video_annots[self.data["keyframe_id"] == keyframe_id]
-            print(frame_video_annots)
+            frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
 
             if len(frame_video_annots) == 0:
                 print("WARNING: zero matches found")
