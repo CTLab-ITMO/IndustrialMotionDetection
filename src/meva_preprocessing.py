@@ -299,7 +299,7 @@ class MEVAProcessor:
 
                             temporal_rows[actor_id] = {
                                 'video_path': output_video_path,
-                                'keyframe_id': frame_num - start_frame + self.padding_frames,
+                                'keyframe_id': frame_num - start_frame,
                                 'track_id': actor_id,
                                 'action_category': activity['action_category'],
                                 'xmin': xmin,
