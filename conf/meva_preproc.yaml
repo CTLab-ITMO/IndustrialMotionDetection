@@ -1,4 +1,6 @@
 annotations_csv: data/MEVA/meva_processed/annotations.csv
+train: data/MEVA/meva_processed/train.csv 
+test: data/MEVA/meva_processed/test.csv
 annotations_folder: data/MEVA/meva-data-repo/annotation/DIVA-phase-2/MEVA/kitware-meva-training
 bbox_area_limit: 10000
 display_annotations: false
