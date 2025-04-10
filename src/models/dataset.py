@@ -201,7 +201,7 @@ class RandomDatasetDecord(IterableDataset):
                 valid_indices = (new_areas / (original_areas + 1e-6)) > 0.5
                 
                 boxes = boxes[valid_indices]
-                targets = targets[valid_indices]
+                one_hot_target = one_hot_target[valid_indices]
 
             video_h, video_w = video_data.shape[-2:]
 
