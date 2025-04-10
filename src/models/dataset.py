@@ -196,9 +196,9 @@ class RandomDatasetDecord(IterableDataset):
                 # Calculate new box areas
                 new_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
                 
-                # Filter boxes where area is reduced by <= 50% (new_area/original_area > 0.5)
+                # Filter boxes where area is reduced by <= 75%
                 # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
-                valid_indices = (new_areas / (original_areas + 1e-6)) > 0.5
+                valid_indices = (new_areas / (original_areas + 1e-6)) > 0.75
                 
                 boxes = boxes[valid_indices]
                 one_hot_target = one_hot_target[valid_indices]
