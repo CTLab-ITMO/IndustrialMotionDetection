@@ -1,5 +1,5 @@
 from torchvision.transforms import Compose, Lambda
-from transforms import (
+from transforms.transforms import (
     ShortSideScale,
     UniformTemporalSubsample,
 )

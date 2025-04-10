@@ -1,17 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import io
-import logging
 import pathlib
 from typing import Any, Dict
 
 from iopath.common.file_io import g_pathmgr
-from pytorchvideo.data.decoder import DecoderType
+from data.decoder import DecoderType
 
 from .video import Video
+from logger import Logger
 
 
-logger = logging.getLogger(__name__)
+SHOW_LOG = True
+logger = Logger(SHOW_LOG).get_logger(__name__)
 
 
 def select_video_class(decoder: str) -> Video:

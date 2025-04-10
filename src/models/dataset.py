@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import IterableDataset
 from torch.utils.data.dataloader import DataLoader
 from data.encoded_video import EncodedVideo
-from transforms import UniformTemporalSubsample
+from transforms.transforms import UniformTemporalSubsample
 from transforms.functional import (short_side_scale_with_boxes, 
                                    uniform_crop_with_boxes)
 from torchvision.transforms import Compose, Lambda

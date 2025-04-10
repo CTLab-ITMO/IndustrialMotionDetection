@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
-import logging
 import math
 from fractions import Fraction
 from typing import BinaryIO, Dict, List, Optional, Tuple, Union
@@ -8,13 +7,15 @@ from typing import BinaryIO, Dict, List, Optional, Tuple, Union
 import av
 import numpy as np
 import torch
-from pytorchvideo.data.encoded_video import EncodedVideo
+from data.encoded_video import EncodedVideo
+from logger import Logger
 
 from .utils import pts_to_secs, secs_to_pts, thwc_to_cthw
 
 
-logger = logging.getLogger(__name__)
-
+SHOW_LOG = True
+logger = Logger(SHOW_LOG).get_logger(__name__)
+        
 
 class EncodedVideoPyAV(EncodedVideo):
     """
