@@ -231,23 +231,11 @@ def random_crop_with_boxes(
     if width > size:
         x_offset = int(np.random.randint(0, width - size))
     cropped = images[:, :, y_offset : y_offset + size, x_offset : x_offset + size]
-    
-    # Calculate original box areas
-    original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
 
     cropped_boxes = crop_boxes(boxes, x_offset, y_offset)
-    
-    # Clip boxes to image boundaries
-    cropped_boxes = clip_boxes_to_image(cropped_boxes, cropped.shape[-2], cropped.shape[-1])
-    
-    # Calculate new box areas
-    new_areas = (cropped_boxes[:, 2] - cropped_boxes[:, 0]) * (cropped_boxes[:, 3] - cropped_boxes[:, 1])
-    
-    # Filter boxes where area is reduced by <= 50% (new_area/original_area > 0.5)
-    # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
-    valid_indices = (new_areas / (original_areas + 1e-6)) > 0.5
-    
-    return cropped, cropped_boxes[valid_indices]
+    return cropped, clip_boxes_to_image(
+        cropped_boxes, cropped.shape[-2], cropped.shape[-1]
+    )
 
 
 def _uniform_crop_helper(images: torch.Tensor, size: int, spatial_idx: int):

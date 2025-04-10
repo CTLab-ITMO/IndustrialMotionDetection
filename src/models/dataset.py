@@ -9,7 +9,8 @@ from torch.utils.data.dataloader import DataLoader
 from data.encoded_video import EncodedVideo
 from transforms.transforms import UniformTemporalSubsample
 from transforms.functional import (short_side_scale_with_boxes, 
-                                   uniform_crop_with_boxes)
+                                   uniform_crop_with_boxes,
+                                   random_crop_with_boxes)
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import NormalizeVideo
 from logger import Logger
@@ -58,6 +59,7 @@ class RandomDatasetDecord(IterableDataset):
         # Count the number of frames for the actions
         self.action_counts = Counter(self.data["action_category"].values)
         self.action_weights = self._calculate_action_weights()
+        print(self.action_weights)
         
         self.grouped_data = self.data.groupby(['video_path', 'track_id'])
         self.groups = list(self.grouped_data.groups.keys())
@@ -183,9 +185,23 @@ class RandomDatasetDecord(IterableDataset):
                 video_data, boxes = short_side_scale_with_boxes(
                     video_data, size=224, backend="pytorch", boxes=boxes
                 )
-                video_data, boxes = uniform_crop_with_boxes(
+
+                # Calculate original box areas
+                original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+                
+                video_data, boxes = random_crop_with_boxes(
                     video_data, size=224, spatial_idx=1, boxes=boxes
                 )
+                
+                # Calculate new box areas
+                new_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+                
+                # Filter boxes where area is reduced by <= 50% (new_area/original_area > 0.5)
+                # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
+                valid_indices = (new_areas / (original_areas + 1e-6)) > 0.5
+                
+                boxes = boxes[valid_indices]
+                targets = targets[valid_indices]
 
             video_h, video_w = video_data.shape[-2:]
 
