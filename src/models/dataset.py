@@ -190,7 +190,7 @@ class RandomDatasetDecord(IterableDataset):
                 original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
                 
                 video_data, boxes = random_crop_with_boxes(
-                    video_data, size=224, spatial_idx=1, boxes=boxes
+                    video_data, size=224, boxes=boxes
                 )
                 
                 # Calculate new box areas
