@@ -10,7 +10,7 @@ from timm.models.registry import register_model
 from dataclasses import dataclass
 import torchvision
 from typing import List
-from image_list import ImageList
+from models.image_list import ImageList
 from collections import OrderedDict
 from pooler import make_3d_pooler
 
