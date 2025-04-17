@@ -1,18 +1,17 @@
-from functools import partial
+import torchvision
 import numpy as np
-from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
+from functools import partial
+from typing import List, Tuple
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 from dataclasses import dataclass
-import torchvision
-from typing import List
-from models.image_list import ImageList
 from collections import OrderedDict
-from pooler import make_3d_pooler
+from models.image_list import ImageList
+from models.pooler import make_3d_pooler
 
 
 def _cfg(url='', **kwargs):
