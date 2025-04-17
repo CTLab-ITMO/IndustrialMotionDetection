@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from roi_align_3d import ROIAlign3d
+from models.roi_align_3d import ROIAlign3d
 
 
 class Pooler3d(nn.Module):
