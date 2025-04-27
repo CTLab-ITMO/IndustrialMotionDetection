@@ -1,5 +1,5 @@
-from BoundingBox import BoundingBox
-from utils import add_bb_into_image, BBType
+from metrics_impl.BoundingBox import BoundingBox
+from metrics_impl.utils import add_bb_into_image, BBType
 
 
 class BoundingBoxes:

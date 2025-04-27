@@ -15,7 +15,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 
-from utils import MethodAveragePrecision, BBType, BBFormat
+from metrics_impl.utils import MethodAveragePrecision, BBType, BBFormat
 
 
 class Evaluator:
