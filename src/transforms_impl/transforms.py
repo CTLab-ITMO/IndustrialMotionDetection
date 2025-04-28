@@ -219,8 +219,8 @@ class ShortSideScaleWithBoxes(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'], target['boxes'] = transforms_impl.functional.short_side_scale_with_boxes(
-            target['video'], target['boxes'], self._size, self._interpolation, self._backend
+        target['video'], target['bbox'] = transforms_impl.functional.short_side_scale_with_boxes(
+            target['video'], target['bbox'], self._size, self._interpolation, self._backend
         )
         return target
 
@@ -247,7 +247,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
         x = target['video']
-        boxes = target['boxes']
+        boxes = target['bbox']
         
         # Calculate original box areas
         original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
@@ -264,7 +264,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         
         target['video'] = cropped_x
         target['target'] = target['target'][valid_indices]
-        target['boxes'] = cropped_boxes[valid_indices]
+        target['bbox'] = cropped_boxes[valid_indices]
         
         return target
 
