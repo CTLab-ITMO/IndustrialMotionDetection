@@ -140,77 +140,40 @@ class RandomDatasetDecord(IterableDataset):
             frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
 
             if len(frame_video_annots) == 0:
-                print("WARNING: zero matches found")
-                print(f"{video_path=} {keyframe_id=}")
-                print(f"{type(video_path)=} {type(keyframe_id)=}")
-                print(f'{self.data["video_path"].dtype=} {self.data["keyframe_id"].dtype=}')
-                print()
-
+                self.logger.warning(f"Zero matches found for {video_path} at {keyframe_id}")
+                
             # Convert to a PyTorch tensor of shape Nx4
             boxes = torch.tensor(
                 frame_video_annots[["xmin", "ymin", "xmax", "ymax"]].values.astype(float),
                 dtype=torch.float32)
 
-            action_categories = frame_video_annots[["action_category"]].values.reshape(-1).astype(str)
+            action_categories = frame_video_annots[["action_category"]].values.reshape(-1)
 
             one_hot_target = torch.zeros(
                 (len(action_categories), self.num_classes),
                 dtype=torch.bool)
 
             for i, c in enumerate(action_categories):
-                one_hot_target[i][self.class2idx[str(c)]] = True
+                one_hot_target[i][self.class2idx[c]] = True
 
             one_hot_target = one_hot_target.to(torch.long)
 
             if len(frame_video_annots) > 1:
-                print(f"INFO: more then one matches")
-                print(f"paths={frame_video_annots['video_path'].unique().tolist()} {keyframe_id=}")
-                print(f"{boxes=} {one_hot_target=}")
-                print()
-
+                self.logger.info(f"{len(frame_video_annots)} matches for {video_path} at {keyframe_id}")
+                
             video_h, video_w = video_data.shape[-2:]
-
-            if self.video_transform:
-                mean = [0.485, 0.456, 0.406]
-                std = [0.229, 0.224, 0.225]
-
-                transform = Compose([
-                    UniformTemporalSubsample(self.clip_len),
-                    Lambda(lambda x: x/255.0),
-                    NormalizeVideo(mean, std),
-                ])
-
-                video_data = transform(video_data)
-
-                video_data, boxes = short_side_scale_with_boxes(
-                    video_data, size=224, backend="pytorch", boxes=boxes
-                )
-
-                # Calculate original box areas
-                original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-                
-                video_data, boxes = random_crop_with_boxes(
-                    video_data, size=224, boxes=boxes
-                )
-                
-                # Calculate new box areas
-                new_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-                
-                # Filter boxes where area is reduced by <= 75%
-                # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
-                valid_indices = (new_areas / (original_areas + 1e-6)) > 0.75
-                
-                boxes = boxes[valid_indices]
-                one_hot_target = one_hot_target[valid_indices]
-
-            video_h, video_w = video_data.shape[-2:]
-
-            yield {
+            
+            data = {
                 "path": f"{video_path}-{keyframe_id}",
                 "video": video_data, # [CxTxHxW]
                 "target": one_hot_target, # [N, cls]
                 "bbox": BoxList(boxes, (video_w, video_h))
             }
+
+            if self.video_transform:
+                data = self.video_transform(data)
+
+            yield data
 
 
 def collate_fn(batch):
@@ -235,15 +198,16 @@ def collate_fn(batch):
     }
     
 
-def get_dataloaders(train_csv_file_path: str, 
-                    val_csv_file_path: str,
-                    num_classes: str,
-                    batch_size, 
-                    seed, 
-                    frame_sample_rate=1, 
-                    clip_len=16,
-                    val_epoch_size_ratio: float = 1.0,
-                    train_epoch_size_ratio: float = 1.0):
+def get_dataloaders(
+    train_csv_file_path: str, 
+    val_csv_file_path: str,
+    num_classes: str,
+    batch_size, 
+    seed, 
+    frame_sample_rate=1, 
+    clip_len=16,
+    val_epoch_size_ratio: float = 1.0,
+    train_epoch_size_ratio: float = 1.0):
     
     image_datasets = dict()
     image_datasets['train'] = RandomDatasetDecord(

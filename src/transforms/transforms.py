@@ -1,10 +1,71 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-
+import torch
+import transforms.functional
+import torchvision.transforms
+from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
 
-import transforms.functional
-import torch
-import torchvision.transforms
+
+class Compose:
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, target):
+        for t in self.transforms:
+            target = t(target)
+        return target
+
+
+class Lambda:
+    """Apply a user-defined lambda as a transform. This transform does not support torchscript.
+
+    Args:
+        lambd (function): Lambda/function to be used for transform.
+    """
+
+    def __init__(self, lambd):
+        if not callable(lambd):
+            raise TypeError(f"Argument lambd should be callable, got {repr(type(lambd).__name__)}")
+        self.lambd = lambd
+
+    def __call__(
+        self,
+        target: Dict[str, torch.Tensor] = None
+    ) -> Dict[str, torch.Tensor]:
+        target['video'] = self.lambd(target['video'])
+        return target
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+
+class NormalizeVideo:
+    """
+    Normalize the video clip by mean subtraction and division by standard deviation
+    Args:
+        mean (3-tuple): pixel RGB mean
+        std (3-tuple): pixel RGB standard deviation
+        inplace (boolean): whether do in-place normalization
+    """
+
+    def __init__(self, mean, std, inplace=False):
+        self.mean = mean
+        self.std = std
+        self.inplace = inplace
+
+    def __call__(
+        self,
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Args:
+            clip (torch.tensor): video clip to be normalized. Size is (C, T, H, W)
+        """
+        target['video'] = F.normalize(target['video'], self.mean, self.std, self.inplace)
+        return target
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(mean={self.mean}, std={self.std}, inplace={self.inplace})"
 
 
 class ApplyTransformToKey:
@@ -26,9 +87,12 @@ class ApplyTransformToKey:
         self._key = key
         self._transform = transform
 
-    def __call__(self, x: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        x[self._key] = self._transform(x[self._key])
-        return x
+    def __call__(
+        self,
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        target[self._key] = self._transform(target[self._key])
+        return target
 
 
 class RemoveKey(torch.nn.Module):
@@ -41,14 +105,17 @@ class RemoveKey(torch.nn.Module):
         super().__init__()
         self._key = key
 
-    def __call__(self, x: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def __call__(
+        self,  
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
         """
         Args:
             x (Dict[str, torch.Tensor]): video clip dict.
         """
-        if self._key in x:
-            del x[self._key]
-        return x
+        if self._key in target:
+            del target[self._key]
+        return target
 
 
 class UniformTemporalSubsample(torch.nn.Module):
@@ -66,14 +133,17 @@ class UniformTemporalSubsample(torch.nn.Module):
         self._num_samples = num_samples
         self._temporal_dim = temporal_dim
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, 
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
         """
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        return transforms.functional.uniform_temporal_subsample(
-            x, self._num_samples, self._temporal_dim
-        )
+        target['video'] = transforms.functional.uniform_temporal_subsample(
+            target['video'], self._num_samples, self._temporal_dim)
+        return target
 
 
 class UniformTemporalSubsampleRepeated(torch.nn.Module):
@@ -87,14 +157,18 @@ class UniformTemporalSubsampleRepeated(torch.nn.Module):
         self._frame_ratios = frame_ratios
         self._temporal_dim = temporal_dim
 
-    def forward(self, x: torch.Tensor):
+    def forward(
+        self, 
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
         """
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        return transforms.functional.uniform_temporal_subsample_repeated(
-            x, self._frame_ratios, self._temporal_dim
+        target['video'] = transforms.functional.uniform_temporal_subsample_repeated(
+            target['video'], self._frame_ratios, self._temporal_dim
         )
+        return target
 
 
 class ShortSideScale(torch.nn.Module):
@@ -110,14 +184,89 @@ class ShortSideScale(torch.nn.Module):
         self._interpolation = interpolation
         self._backend = backend
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
         """
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        return transforms.functional.short_side_scale(
-            x, self._size, self._interpolation, self._backend
+        target['video'] = transforms.functional.short_side_scale(
+            target['video'], self._size, self._interpolation, self._backend
         )
+        return target
+        
+
+class ShortSideScaleWithBoxes(torch.nn.Module):
+    """
+    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``.
+    """
+
+    def __init__(
+        self, size: int, interpolation: str = "bilinear", backend: str = "pytorch"
+    ):
+        super().__init__()
+        self._size = size
+        self._interpolation = interpolation
+        self._backend = backend
+
+    def forward(
+        self,
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Args:
+            x (torch.Tensor): video tensor with shape (C, T, H, W).
+        """
+        target['video'], target['boxes'] = transforms.functional.short_side_scale_with_boxes(
+            target['video'], target['boxes'], self._size, self._interpolation, self._backend
+        )
+        return target
+
+
+class RandomCropVideoWithBoxes(torch.nn.Module):
+    """
+    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``.
+    """
+
+    def __init__(
+        self, size: int, interpolation: str = "bilinear", backend: str = "pytorch"
+    ):
+        super().__init__()
+        self._size = size
+        self._interpolation = interpolation
+        self._backend = backend
+
+    def forward(
+        self, 
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Args:
+            x (torch.Tensor): video tensor with shape (C, T, H, W).
+        """
+        x = target['video']
+        boxes = target['boxes']
+        
+        # Calculate original box areas
+        original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        cropped_x, cropped_boxes = transforms.functional.random_crop_with_boxes(
+            x, self._size, boxes
+        )
+        
+        # Calculate new box areas
+        new_areas = (cropped_boxes[:, 2] - cropped_boxes[:, 0]) * (cropped_boxes[:, 3] - cropped_boxes[:, 1])
+        
+        # Filter boxes where area is reduced by <= 75%
+        # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
+        valid_indices = (new_areas / (original_areas + 1e-6)) > 0.75
+        
+        target['video'] = cropped_x
+        target['target'] = target['target'][valid_indices]
+        target['boxes'] = cropped_boxes[valid_indices]
+        
+        return target
 
 
 class RandomShortSideScale(torch.nn.Module):
