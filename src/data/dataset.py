@@ -47,7 +47,6 @@ class RandomDatasetDecord(IterableDataset):
         self.epoch_size = int(self.video_paths_len * epoch_size_ratio)
         
         self.num_classes = num_classes
-        # TODO: move video_transform into transforms
         self.video_transform = video_transform
         
         # Count the number of frames for the actions

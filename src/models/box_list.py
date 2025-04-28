@@ -1,5 +1,6 @@
 # Modified from https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/structures/bounding_box.py
 import torch
+import numpy as np
 
 # transpose
 FLIP_LEFT_RIGHT = 0
@@ -339,6 +340,28 @@ class BoxList(object):
         s += "image_height={}, ".format(self.size[1])
         s += "mode={})".format(self.mode)
         return s
+    
+    def keep_boxes(self, keep_indices):
+        """
+        Keep only the boxes at the specified indices and remove all others.
+        
+        Args:
+            keep_indices (Tensor, list, or array): Indices of boxes to keep
+        """
+        if isinstance(keep_indices, (list, np.ndarray)):
+            keep_indices = torch.as_tensor(keep_indices, device=self.bbox.device)
+        
+        bbox = self.bbox[keep_indices]
+        new_boxlist = BoxList(bbox, self.size, self.mode)
+        
+        # Copy over all fields
+        for k, v in self.extra_fields.items():
+            if isinstance(v, torch.Tensor):
+                new_boxlist.add_field(k, v[keep_indices])
+            else:
+                new_boxlist.add_field(k, v)
+        
+        return new_boxlist
 
 
 if __name__ == "__main__":
