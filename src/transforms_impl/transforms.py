@@ -4,7 +4,6 @@ import transforms_impl.functional
 import torchvision.transforms
 from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
-from models.box_list import BoxList
 
 
 class Compose:
@@ -220,12 +219,9 @@ class ShortSideScaleWithBoxes(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        transformed_video, transformed_bbox = transforms_impl.functional.short_side_scale_with_boxes(
-            target['video'], target['bbox'].bbox, self._size, self._interpolation, self._backend
+        target['video'], target['bbox'] = transforms_impl.functional.short_side_scale_with_boxes(
+            target['video'], target['bbox'], self._size, self._interpolation, self._backend
         )
-        h, w = transformed_video.shape[-2:]
-        target['video'] = transformed_video
-        target['bbox'] = BoxList(transformed_bbox, (w, h))
         return target
 
 
@@ -254,15 +250,13 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         boxes = target['bbox']
         
         # Calculate original box areas
-        original_areas = target['bbox'].area()
+        original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         cropped_x, cropped_boxes = transforms_impl.functional.random_crop_with_boxes(
             x, self._size, boxes
         )
         
-        # Calculate new box 
-        h, w = cropped_x.shape[-2:]
-        cropped_boxes = BoxList(cropped_boxes, (w, h))
-        new_areas = cropped_boxes.area()
+        # Calculate new box areas
+        new_areas = (cropped_boxes[:, 2] - cropped_boxes[:, 0]) * (cropped_boxes[:, 3] - cropped_boxes[:, 1])
         
         # Filter boxes where area is reduced by <= 75%
         # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
@@ -270,7 +264,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         
         target['video'] = cropped_x
         target['target'] = target['target'][valid_indices]
-        target['bbox'] = cropped_boxes.keep_boxes(valid_indices)
+        target['bbox'] = cropped_boxes[valid_indices]
         
         return target
 
