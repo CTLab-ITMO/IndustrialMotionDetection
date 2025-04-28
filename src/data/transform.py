@@ -1,4 +1,3 @@
-import torch
 from transforms.transforms import (
     Compose,
     Lambda,
