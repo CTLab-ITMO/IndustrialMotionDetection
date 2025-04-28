@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import torch
-import transforms.functional
+import transforms_impl.functional
 import torchvision.transforms
 from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
@@ -120,7 +120,7 @@ class RemoveKey(torch.nn.Module):
 
 class UniformTemporalSubsample(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.uniform_temporal_subsample``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.uniform_temporal_subsample``.
     """
 
     def __init__(self, num_samples: int, temporal_dim: int = -3):
@@ -141,7 +141,7 @@ class UniformTemporalSubsample(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = transforms.functional.uniform_temporal_subsample(
+        target['video'] = transforms_impl.functional.uniform_temporal_subsample(
             target['video'], self._num_samples, self._temporal_dim)
         return target
 
@@ -149,7 +149,7 @@ class UniformTemporalSubsample(torch.nn.Module):
 class UniformTemporalSubsampleRepeated(torch.nn.Module):
     """
     ``nn.Module`` wrapper for
-    ``transforms.functional.uniform_temporal_subsample_repeated``.
+    ``transforms_impl.functional.uniform_temporal_subsample_repeated``.
     """
 
     def __init__(self, frame_ratios: Tuple[int], temporal_dim: int = -3):
@@ -165,7 +165,7 @@ class UniformTemporalSubsampleRepeated(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = transforms.functional.uniform_temporal_subsample_repeated(
+        target['video'] = transforms_impl.functional.uniform_temporal_subsample_repeated(
             target['video'], self._frame_ratios, self._temporal_dim
         )
         return target
@@ -173,7 +173,7 @@ class UniformTemporalSubsampleRepeated(torch.nn.Module):
 
 class ShortSideScale(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.short_side_scale``.
     """
 
     def __init__(
@@ -192,7 +192,7 @@ class ShortSideScale(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = transforms.functional.short_side_scale(
+        target['video'] = transforms_impl.functional.short_side_scale(
             target['video'], self._size, self._interpolation, self._backend
         )
         return target
@@ -200,7 +200,7 @@ class ShortSideScale(torch.nn.Module):
 
 class ShortSideScaleWithBoxes(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.short_side_scale``.
     """
 
     def __init__(
@@ -219,7 +219,7 @@ class ShortSideScaleWithBoxes(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'], target['boxes'] = transforms.functional.short_side_scale_with_boxes(
+        target['video'], target['boxes'] = transforms_impl.functional.short_side_scale_with_boxes(
             target['video'], target['boxes'], self._size, self._interpolation, self._backend
         )
         return target
@@ -227,7 +227,7 @@ class ShortSideScaleWithBoxes(torch.nn.Module):
 
 class RandomCropVideoWithBoxes(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.short_side_scale``.
     """
 
     def __init__(
@@ -251,7 +251,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         
         # Calculate original box areas
         original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-        cropped_x, cropped_boxes = transforms.functional.random_crop_with_boxes(
+        cropped_x, cropped_boxes = transforms_impl.functional.random_crop_with_boxes(
             x, self._size, boxes
         )
         
@@ -271,7 +271,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
 
 class RandomShortSideScale(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.short_side_scale``. The size
+    ``nn.Module`` wrapper for ``transforms_impl.functional.short_side_scale``. The size
     parameter is chosen randomly in [min_size, max_size].
     """
 
@@ -294,14 +294,14 @@ class RandomShortSideScale(torch.nn.Module):
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
         size = torch.randint(self._min_size, self._max_size + 1, (1,)).item()
-        return transforms.functional.short_side_scale(
+        return transforms_impl.functional.short_side_scale(
             x, size, self._interpolation, self._backend
         )
 
 
 class UniformCropVideo(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.uniform_crop``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.uniform_crop``.
     """
 
     def __init__(
@@ -317,7 +317,7 @@ class UniformCropVideo(torch.nn.Module):
         Args:
             x (Dict[str, torch.Tensor]): video clip dict.
         """
-        x[self._video_key] = transforms.functional.uniform_crop(
+        x[self._video_key] = transforms_impl.functional.uniform_crop(
             x[self._video_key], self._size, x[self._aug_index_key]
         )
         return x
@@ -420,7 +420,7 @@ class MoveChannelFront(torch.nn.Module):
 
 class RandomResizedCrop(torch.nn.Module):
     """
-    ``nn.Module`` wrapper for ``transforms.functional.random_resized_crop``.
+    ``nn.Module`` wrapper for ``transforms_impl.functional.random_resized_crop``.
     """
 
     def __init__(
@@ -449,7 +449,7 @@ class RandomResizedCrop(torch.nn.Module):
         Args:
             x (torch.Tensor): Input video tensor with shape (C, T, H, W).
         """
-        return transforms.functional.random_resized_crop(
+        return transforms_impl.functional.random_resized_crop(
             x,
             self._target_height,
             self._target_width,
