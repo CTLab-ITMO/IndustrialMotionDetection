@@ -49,8 +49,28 @@ class RandomDatasetDecord(IterableDataset):
         self.num_classes = num_classes
         self.video_transform = video_transform
         
-        # Count the number of frames for the actions
-        self.action_counts = Counter(self.data["action_category"].values)
+        unique_tracks_per_category = (
+            self.data.groupby(['video_path', 'track_id', 'action_category'])
+            .size()
+            .groupby('action_category')
+            .size()
+            .reset_index(name='unique_tracks')
+        )
+        self.category_to_tracks = dict(zip(
+            unique_tracks_per_category['action_category'], 
+            unique_tracks_per_category['unique_tracks']))
+        
+        unique_frames_per_category = (
+            self.data.groupby(['video_path', 'keyframe_id', 'action_category'])
+            .size()
+            .groupby('action_category')
+            .size()
+            .reset_index(name='unique_frames')
+        )
+        self.category_to_frames = dict(zip(
+            unique_frames_per_category['action_category'], 
+            unique_frames_per_category['unique_frames']))
+        
         self.action_weights = self._calculate_action_weights()
         print(self.action_weights)
         
@@ -63,12 +83,13 @@ class RandomDatasetDecord(IterableDataset):
         """
         Calculate class weights based on inverse frequency with smoothing factor alpha
         """
-        total = sum(self.action_counts.values())
+        total_frames = sum(self.category_to_frames.values())
+        total_tracks = sum(self.category_to_tracks.values())
         action_weights = {}
-        for cls, count in self.action_counts.items():
-            freq = count / total
-            inverse_freq = total / count
-            action_weights[cls] = (1 - alpha) / freq + alpha * inverse_freq
+        for k in self.category_to_tracks.keys():
+            frames_ratio = total_frames / self.category_to_frames[k]
+            tracks_ratio = total_tracks / self.category_to_tracks[k]
+            action_weights[k] = frames_ratio * tracks_ratio
         return action_weights
     
     def _calculate_group_weights(self):
