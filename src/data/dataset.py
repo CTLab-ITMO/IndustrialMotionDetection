@@ -154,17 +154,18 @@ class RandomDatasetDecord(IterableDataset):
             if len(frame_video_annots) > 1:
                 self.logger.info(f"{len(frame_video_annots)} matches for {video_path} at {keyframe_id}")
                 
-            video_h, video_w = video_data.shape[-2:]
-            
             data = {
                 "path": f"{video_path}-{keyframe_id}",
                 "video": video_data, # [CxTxHxW]
                 "target": one_hot_target, # [N, cls]
-                "bbox": BoxList(boxes, (video_w, video_h))
+                "bbox": boxes, # [N, 4]
             }
 
             if self.video_transform:
                 data = self.video_transform(data)
+                
+            video_h, video_w = data['video'].shape[-2:]
+            data['bbox'] = BoxList(data['bbox'], (video_w, video_h))
 
             yield data
 
