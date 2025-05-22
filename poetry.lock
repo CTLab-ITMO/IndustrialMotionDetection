@@ -2565,6 +2565,17 @@ files = [
 tests = ["pytest"]
 
 [[package]]
+name = "py-cpuinfo"
+version = "9.0.0"
+description = "Get CPU info with pure Python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"},
+    {file = "py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5"},
+]
+
+[[package]]
 name = "pyasn1"
 version = "0.6.1"
 description = "Pure-Python implementation of ASN.1 types and DER/BER/CER codecs (X.208)"
@@ -3741,6 +3752,59 @@ files = [
 ]
 
 [[package]]
+name = "ultralytics"
+version = "8.3.118"
+description = "Ultralytics YOLO 🚀 for SOTA object detection, multi-object tracking, instance segmentation, pose estimation and image classification."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "ultralytics-8.3.118-py3-none-any.whl", hash = "sha256:c681a2b1d628729f7a16abbe15927e0292f762f573e553d06b5d4475850283dc"},
+    {file = "ultralytics-8.3.118.tar.gz", hash = "sha256:e53e5bdb642b78e5eca3517642050c951bcb28bbea85db7e67b68a6909a177bd"},
+]
+
+[package.dependencies]
+matplotlib = ">=3.3.0"
+numpy = ">=1.23.0,<=2.1.1"
+opencv-python = ">=4.6.0"
+pandas = ">=1.1.4"
+pillow = ">=7.1.2"
+psutil = "*"
+py-cpuinfo = "*"
+pyyaml = ">=5.3.1"
+requests = ">=2.23.0"
+scipy = ">=1.4.1"
+seaborn = ">=0.11.0"
+torch = [
+    {version = ">=1.8.0,<2.4.0 || >2.4.0", markers = "sys_platform == \"win32\""},
+    {version = ">=1.8.0", markers = "sys_platform != \"win32\""},
+]
+torchvision = ">=0.9.0"
+tqdm = ">=4.64.0"
+ultralytics-thop = ">=2.0.0"
+
+[package.extras]
+dev = ["coverage[toml]", "ipython", "mkdocs (>=1.6.0)", "mkdocs-macros-plugin (>=1.0.5)", "mkdocs-material (>=9.5.9)", "mkdocs-ultralytics-plugin (>=0.1.17)", "mkdocstrings[python]", "pytest", "pytest-cov"]
+export = ["coremltools (>=8.0)", "h5py (!=3.11.0)", "keras", "onnx (>=1.12.0)", "openvino (>=2024.0.0)", "scikit-learn (>=1.3.2)", "tensorflow (>=2.0.0)", "tensorflowjs (>=2.0.0)", "tensorstore (>=0.1.63)"]
+extra = ["albumentations (>=1.4.6)", "hub-sdk (>=0.0.12)", "ipython", "pycocotools (>=2.0.7)"]
+logging = ["comet", "dvclive (>=2.12.0)", "tensorboard (>=2.13.0)"]
+solutions = ["shapely (>=2.0.0,<2.1.0)", "streamlit (>=1.29.0,<1.44.0)"]
+
+[[package]]
+name = "ultralytics-thop"
+version = "2.0.14"
+description = "Ultralytics THOP package for fast computation of PyTorch model FLOPs and parameters."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "ultralytics_thop-2.0.14-py3-none-any.whl", hash = "sha256:720b421e2459179fee21ec8f730d242a20774cd4b0a00a58d02351a39ec3881c"},
+    {file = "ultralytics_thop-2.0.14.tar.gz", hash = "sha256:38ebfdbd3cd8dafdc3d26ec3a7d4f604fbeed5e69a74e61a48060b39736c945c"},
+]
+
+[package.dependencies]
+numpy = "*"
+torch = "*"
+
+[[package]]
 name = "uri-template"
 version = "1.3.0"
 description = "RFC 6570 URI Template Processor"
@@ -3901,4 +3965,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "9afe875fa0738792ef63d3ef76722de71310e087fef8cd4de2ba74f3b7df97cf"
+content-hash = "efd3a21cc5f122a16d5fda0e1774dcde9fac7abcb3cfba987c601f2c17717f54"
