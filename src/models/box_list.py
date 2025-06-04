@@ -363,9 +363,57 @@ class BoxList(object):
         
         return new_boxlist
 
+    def enlarge(self, percent: float) -> 'BoxList':
+        """
+        Symmetrically enlarge all bounding boxes by a given percentage while keeping their centers fixed.
+        The expansion is applied equally in all directions (left, right, top, bottom).
+        
+        Args:
+            percent (float): Percentage to expand the boxes (e.g., 5.0 for 5% expansion)
+            
+        Returns:
+            BoxList: A new BoxList with enlarged boxes
+        
+        Example:
+            >>> boxes = BoxList([[10, 10, 30, 30]], (100, 100))
+            >>> enlarged = boxes.enlarge(20.0)  # 20% expansion
+            >>> enlarged.bbox
+            tensor([[ 8.,  8., 32., 32.]])  # Original center (20,20) remains unchanged
+        """
+        if percent < 0:
+            raise ValueError("Percent must be non-negative")
+
+        # Convert to xyxy format for processing
+        boxes_xyxy = self.convert("xyxy").bbox
+        img_width, img_height = self.size
+        
+        # Calculate current dimensions
+        widths = boxes_xyxy[:, 2] - boxes_xyxy[:, 0]
+        heights = boxes_xyxy[:, 3] - boxes_xyxy[:, 1]
+        
+        # Calculate symmetric expansion amounts
+        expand_w = widths * (percent / 200)  # /200 because we expand half in each direction
+        expand_h = heights * (percent / 200)
+        
+        # Calculate new coordinates with clamping
+        new_coords = torch.stack([
+            torch.clamp(boxes_xyxy[:, 0] - expand_w, min=0),          # x1
+            torch.clamp(boxes_xyxy[:, 1] - expand_h, min=0),          # y1
+            torch.clamp(boxes_xyxy[:, 2] + expand_w, max=img_width),  # x2
+            torch.clamp(boxes_xyxy[:, 3] + expand_h, max=img_height)  # y2
+        ], dim=1)
+        
+        # Create new BoxList
+        result = BoxList(new_coords, self.size, mode="xyxy")
+        
+        # Preserve all extra fields
+        for field, value in self.extra_fields.items():
+            result.add_field(field, value)
+        
+        return result.convert(self.mode)
 
 if __name__ == "__main__":
-    bbox = BoxList([[0, 0, 10, 10], [0, 0, 5, 5]], (10, 10))
+    bbox = BoxList([[5, 5, 9, 9], [2, 2, 5, 5]], (10, 10))
     s_bbox = bbox.resize((5, 5))
     print(s_bbox)
     print(s_bbox.bbox)
@@ -373,3 +421,7 @@ if __name__ == "__main__":
     t_bbox = bbox.transpose(0)
     print(t_bbox)
     print(t_bbox.bbox)
+    
+    enlarge_bbox = bbox.enlarge(10.0)
+    print(enlarge_bbox)
+    print(enlarge_bbox.bbox)
