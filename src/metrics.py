@@ -24,7 +24,7 @@ def compute_metrics_batch_detections(
         gt_boxes = batch['bbox'][j].bbox.cpu().detach().numpy()
         gt_targets = batch['target'][j].cpu().detach().numpy()
 
-        nameOfImage = "/".join(batch['path'][j].split('/')[-2:])
+        nameOfImage = "/".join(batch['path'][j].split('/')[-2:]) + f'/{j}'
         imgSize = tuple(batch['video'].shape[-2:])
         # print(f"{nameOfImage=} {imgSize}")
 
@@ -48,13 +48,14 @@ def compute_metrics_batch_detections(
             label = np.argmax(gt_targets[k])
             w = x_max - x_min
             h = y_max - y_min
-            bb = BoundingBox(nameOfImage,
-                            label,
-                            x_min, y_min, w, h,
-                            coordType,
-                            imgSize,
-                            BBType.GroundTruth,
-                            format=bbFormat)
+            bb = BoundingBox(
+                nameOfImage,
+                label,
+                x_min, y_min, w, h,
+                coordType,
+                imgSize,
+                BBType.GroundTruth,
+                format=bbFormat)
             allBoundingBoxes.addBoundingBox(bb)
     
     evaluator = Evaluator()
