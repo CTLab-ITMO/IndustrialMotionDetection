@@ -1,130 +1,106 @@
-# IndustrialMotionDetection. How to start?
+# IndustrialMotionDetection
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
+<a href="https://itmo.ru/"><img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg"></a>
 
-- clone repository
+<p align="center">
+  <img src="examples/talk_on_phone.jpg" width="300">
+  <img src="examples/people_on_roof.jpg" width="300">
+</p>
 
-```bash
-git clone -b ruslan-dev https://github.com/CTLab-ITMO/IndustrialMotionDetection.git
-cd IndustrialMotionDetection
-```
 
-- setup local venv using poetry.lock and pyproject.toml
+**IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
-## Datasets
+В условиях существующих систем видеонаблюдения существует потребность в инструментах, способных точно идентифицировать некоторые действия работников и своевременно предупреждать о потенциально опасных ситуациях. На данный момент решения в этой области ограничены коммерческими продуктами, доступ к которым затруднен для широкого круга пользователей, либо носят узкоспециализированный характер и требуют адаптации под конкретные условия применения.
 
-### Meva preprocessing
+**В результате чего наша команда выделила набор актуальных действий:**
+1) Перемещение предметов, оборудования
+2) Использование инструментов
+3) Использование смартфона/телефона
+4) Курение
+5) Прием пищи или напитков
+6) Нахождение на рабочем месте в определенной зоне
+7) Взаимодействие с другими людьми (разговор, рукопожатие, объятие) 
+8) Поднятие по лестнице с тремя точками опоры
+9) Нахождение человека в запретной зоне
+10) Саботаж камер 
 
-- create data folder
+## Распознавание действий
 
-```bash
-mkdir -p data/MEVA
-```
+Поскольку действия, которые мы анализируем, имеют различный характер и требуют разных подходов к обработке данных, мы приняли решение разделить их на отдельные модели.
 
-- clone MEVA annotations repository (data/MEVA)
+В результате мы разработали следующую структуру:
 
-```bash
-# clones annotations folder
-git clone https://gitlab.kitware.com/meva/meva-data-repo.git data/MEVA/meva-data-repo
-```
+### **Модель VideoMAE** 
+- Перемещение предметов, оборудования
+- Использование смартфона/телефона
+- Взаимодействие с другими людьми (разговор, рукопожатие, объятие)
 
-- change config file parameters at `conf/meva_preproc.yaml`
+<ins> сюда закинуть краткое описание модели и действий</ins>
 
-```yaml
-annotations_csv: data/MEVA/meva_processed/annotations.csv
-annotations_folder: data/MEVA/meva-data-repo/annotation/DIVA-phase-2/MEVA/kitware-meva-training
-bbox_area_limit: 10000
-display_annotations: false
-padding_frames: 30
-result_folder: data/MEVA/meva_processed
-split_seed: 42
-target_activities:
-- person_talks_on_phone
-- person_texts_on_phone
-- person_picks_up_object
-- person_reads_document
-- person_interacts_with_laptop
-test_size: 0.2
-videos_root: data/MEVA/mevadata-public-01/drops-123-r13
-```
+### **Модель Yolo Pose Estimation + DepthAnything** 
+- Подъем по лестнице с тремя точками опоры: проверка соблюдения человеком правил безопасности при подъеме по лестнице, используя три точки опоры для предотвращения падений и травм.
 
-- run preprocessing
+- Нахождение человека в запретной зоне: инентификация случаев несанкционированного доступа в зоны, представляющие потенциальную опасность или требующие специального разрешения.
 
-```bash
-python src/meva_preprocessing.py --config conf/meva_preproc.yaml
-```
+- Саботаж камер: обнаружение попыток вмешательства в работу камер, такие как их блокировка, повреждение или намеренное изменение угла обзора.
 
-### Save processed dataset into kaggle dataset collection
+Модель состоит из YOLOv11 Pose Estimation, DepthAnything и SAM&DINO. 
 
-- create `.env` file and fill missing variables
+### **Модель DINOv2** 
+- Использование инструментов: использование инструментов часто применяемых на производстве, таких как шуруповерт, плоскозубцы, дрель, циркулярная пила, сварка, полирование металла.
+- Нахождение на рабочем месте в определенной зоне
+- Курение: выявление случаев курения в неположенных для этого местах, людей пытающихся скрыть курение.
 
-```text
-KAGGLE_USERNAME=
-KAGGLE_KEY=
-```
+<ins> сюда закинуть краткое описание модели и действий</ins>
 
-- run command below to upload processed dataset to your remote repo (specify dataset name for remote repo)
 
-```bash
-python scripts/upload.py --dataset-name meva-processed-test
-```
-
-- run command below to download dataset from your remote repo
-
-```bash
-python scripts/download.py \
-  --dataset $KAGGLE_USERNAME/meva-processed-test \
-  --output data/MEVA/meva-processed-test.zip
-```
-
-- unzip donwloaded dataset
-
-```bash
-unzip -o -q data/MEVA/meva-processed-test.zip \
-  -d data/MEVA/meva-processed-test
-```
-
-## Project Structure
+## Архитектура проекта
 
 ```
-.
-├── LICENSE
-├── Makefile
-├── README.md
-├── conf
-│   └── meva_preproc.yaml
+├── LICENSE            <- Open-source license if one is chosen
+├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
+├── README.md          <- The top-level README for developers using this project.
 ├── data
-│   └── MEVA
-│       └── meva_processed
-├── logfile.log
-├── models
-├── notebooks
-│   ├── meva-processed-eda.ipynb
-│   └── videomae-action-recognition.ipynb
-├── poetry.lock
-├── pyproject.toml
-├── references
-├── reports
-│   └── figures
-├── requirements.txt
-├── scripts
-│   ├── download.py
-│   └── upload.py
-├── setup.cfg
-└── src
-    ├── README.md
-    ├── __init__.py
-    ├── config.py
-    ├── logger.py
-    ├── meva_preprocessing.py
-    ├── models
-    │   └── VideoMAE
-    │       ├── __init__.py
-    │       ├── box_list.py
-    │       ├── dataset.py
-    │       ├── image_list.py
-    │       ├── metrics.py
-    │       ├── model.py
-    │       ├── predict.py
-    │       ├── preprocess.py
-    │       └── train.py
-    └── utils.py
+│   ├── external       <- Data from third party sources.
+│   ├── interim        <- Intermediate data that has been transformed.
+│   ├── processed      <- The final, canonical data sets for modeling.
+│   └── raw            <- The original, immutable data dump.
+│
+├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+│
+├── models             <- Trained and serialized models, model predictions, or model summaries
+│
+├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator's initials, and a short `-` delimited description, e.g.
+│                         `1.0-jqp-initial-data-exploration`.
+│
+├── pyproject.toml     <- Project configuration file with package metadata for 
+│                         src and configuration for tools like black
+│
+├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+│
+├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        <- Generated graphics and figures to be used in reporting
+│
+├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with `pip freeze > requirements.txt`
+│
+├── setup.cfg          <- Configuration file for flake8
+│
+└── src   <- Source code for use in this project.
+    │
+    ├── __init__.py             <- Makes src a Python module
+    │
+    ├── config.py               <- Store useful variables and configuration
+    │
+    ├── dataset.py              <- Scripts to download or generate data
+    │
+    ├── features.py             <- Code to create features for modeling
+    │
+    ├── modeling                
+    │   ├── __init__.py 
+    │   ├── predict.py          <- Code to run model inference with trained models          
+    │   └── train.py            <- Code to train models
+    │
+    └── plots.py                <- Code to create visualizations
 ```
