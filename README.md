@@ -9,6 +9,14 @@ cd IndustrialMotionDetection
 
 - setup local venv using poetry.lock and pyproject.toml
 
+## Training 
+
+- `notebooks/video_mae_pretrain.ipynb` - notebook for pretraining 
+
+- `notebooks/videomae-train.ipynb` - train localization task by VideoMAE + YOLO pipeline
+
+- `notebooks/meva-processed-eda.ipynb` - meva eda datasets processing
+
 ## Datasets
 
 - Refer to [DATASETS.md](src/data/DATASETS.md) in order to use avaliable datasets 
@@ -59,3 +67,9 @@ cd IndustrialMotionDetection
     │       └── train.py
     └── utils.py
 ```
+
+## Sources
+
+- [MEVA dataset](https://mevadata.org/)
+- [VideoMAE Action Detection](https://github.com/MCG-NJU/VideoMAE-Action-Detection)
+ 
