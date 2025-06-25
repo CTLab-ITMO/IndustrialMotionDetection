@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 import pandas as pd
 import numpy as np
 import torch
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, Dataset
 from torch.utils.data.dataloader import DataLoader
 from video.encoded_video import EncodedVideo
 from logger import Logger
@@ -191,7 +191,7 @@ class RandomDatasetDecord(IterableDataset):
             yield data
 
 
-class KeyframeSamplingDataset(IterableDataset):
+class KeyframeSamplingDataset(Dataset):
     def __init__(
         self,
         data_folder_path: str,
@@ -201,7 +201,9 @@ class KeyframeSamplingDataset(IterableDataset):
         epoch_size_ratio=1.0,
         frame_sample_rate=1,
         clip_len=16,
-        num_classes=5
+        num_classes=5,
+        seed=42,
+        samples_per_video=3,
     ):
         super().__init__()
         
@@ -209,10 +211,14 @@ class KeyframeSamplingDataset(IterableDataset):
         self.logger = Logger(SHOW_LOG).get_logger(__name__)
 
         self.class2idx = class2idx
+        self.idx2class = {idx: cls_name for cls_name, idx in class2idx.items()}
         
         self.data_folder_path = data_folder_path
-
         self.data = pd.read_csv(csv_file_path, low_memory=False)
+        self.seed = seed
+        self.samples_per_video = samples_per_video
+        
+        self.data = self.sample_data()
 
         self.offset_frames = 15
         self.offset_sec = 0.4
@@ -222,9 +228,9 @@ class KeyframeSamplingDataset(IterableDataset):
         self.frame_sample_rate = frame_sample_rate
         self.clip_duration = (self.clip_len * self.frame_sample_rate) / self.frames_per_second
         
-        self.video_paths = self.data.video_path.unique()
-        self.video_paths_len = len(self.video_paths)
-        self.epoch_size = int(self.video_paths_len * epoch_size_ratio)
+        # self.video_paths = self.data.video_path.unique()
+        # self.video_paths_len = len(self.video_paths)
+        # self.epoch_size = int(self.video_paths_len * epoch_size_ratio)
         
         self.num_classes = num_classes
         self.video_transform = video_transform
@@ -232,9 +238,32 @@ class KeyframeSamplingDataset(IterableDataset):
         self.grouped_data = self.data.groupby(['video_path', 'keyframe_id'])
         self.groups = list(self.grouped_data.groups.keys())
         
-        self.group_weights = self._calculate_group_weights()
+        self.labels = self._get_labels()
+        
+    def sample_data(self):
+        # First get unique frame identifiers (video_path + keyframe_id)
+        unique_frames = self.data[['video_path', 'keyframe_id']].drop_duplicates()
+
+        # Sample from these unique frames per video
+        sampled_frames = unique_frames.groupby('video_path', group_keys=False).apply(
+            lambda x: x.sample(min(len(x), self.samples_per_video), random_state=self.seed)
+        )
+
+        # Now merge back with original dataframe to get all annotations for these frames
+        sampled_df = pd.merge(
+            sampled_frames,
+            self.data,
+            on=['video_path', 'keyframe_id'],
+            how='left'
+        )
+
+        sampled_df.reset_index(drop=True)
+        return sampled_df
+        
+    def __len__(self):
+        return len(self.groups)  # Return total number of samples
     
-    def _calculate_group_weights(self):
+    def _get_labels(self):
         """
         Calculate sampling weights for each (video, track) group based on action frequency
         """
@@ -246,80 +275,78 @@ class KeyframeSamplingDataset(IterableDataset):
         for cls, count in class_instance_counts.items():
             repeat_factors[cls] = max(1.0, np.sqrt(threshold / count))
             
-        # 3. Assign image-level repeat factors
-        image_rf = defaultdict(float)
-        for (video, frame), group in self.grouped_data:
-            rf = max(repeat_factors[cls] for cls in group['action_category'].unique())
-            image_rf[(video, frame)] = rf
+        labels = []
+        for _, group in self.grouped_data:
+            actions = group['action_category'].unique()
+            rfs = [repeat_factors[cls] for cls in actions]
+            idx = np.argmax(rfs)
+            labels.append(self.class2idx[actions[idx]] - 1)
 
-        # Convert to probability weights
-        total_rf = sum(image_rf.values())
-        image_weights = {k: v/total_rf for k, v in image_rf.items()}
-
-        return image_weights
-
-    def __len__(self):
-        return self.epoch_size
-
-    def __iter__(self):
-        for _ in range(self.epoch_size):
-            # Sample (video_path, track_id) pair
-            group_key = random.choices(self.groups, weights=self.group_weights, k=1)[0]
-            video_path, keyframe_id = group_key
-            
-            video_annots = self.data.loc[self.data["video_path"] == video_path]
-            frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
-            
-            offset = self.clip_len // 2
-            start_frame_id, end_frame_id = keyframe_id - offset, keyframe_id + offset
+        return labels
+    
+    def __getitem__(self, idx):
+        video_path, keyframe_id = self.groups[idx]
         
-            video_src = EncodedVideo.from_path(f"{self.data_folder_path}/{video_path}")
-            # start_sec from offset_sec, since 30 padding frames
-            start_sec = start_frame_id / self.frames_per_second
-            end_sec = min(video_src.duration, math.ceil(end_frame_id / self.frames_per_second)) 
-            # Load the desired clip [C, T, H, W]
-            video_data = video_src.get_clip(start_sec=start_sec, end_sec=end_sec)['video']
-            video_src.close()
-            del video_src
+        video_annots = self.data.loc[self.data["video_path"] == video_path]
+        frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
+        
+        offset = self.clip_len // 2
+        start_frame_id, end_frame_id = keyframe_id - offset, keyframe_id + offset
+        
+        video_src = EncodedVideo.from_path(f"{self.data_folder_path}/{video_path}")
+        start_sec = start_frame_id / self.frames_per_second
+        end_sec = min(video_src.duration, math.ceil(end_frame_id / self.frames_per_second))
+        
+        # Load the desired clip [C, T, H, W]
+        video_data = video_src.get_clip(start_sec=start_sec, end_sec=end_sec)['video']
+        video_src.close()
+        del video_src
+        
+        frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
+
+        if len(frame_video_annots) == 0:
+            print(f"INFO: Zero annots found for {video_path} at {keyframe_id}")
             
-            frame_video_annots = video_annots[video_annots["keyframe_id"] == keyframe_id]
+        # Convert to a PyTorch tensor of shape Nx4
+        boxes = torch.tensor(
+            frame_video_annots[["xmin", "ymin", "xmax", "ymax"]].values.astype(float),
+            dtype=torch.float32)
 
-            if len(frame_video_annots) == 0:
-                print(f"INFO: Zero annots found for {video_path} at {keyframe_id}")
-                
-            # Convert to a PyTorch tensor of shape Nx4
-            boxes = torch.tensor(
-                frame_video_annots[["xmin", "ymin", "xmax", "ymax"]].values.astype(float),
-                dtype=torch.float32)
+        action_categories = frame_video_annots[["action_category"]].values.reshape(-1)
 
-            action_categories = frame_video_annots[["action_category"]].values.reshape(-1)
+        one_hot_target = torch.zeros(
+            (len(action_categories), self.num_classes),
+            dtype=torch.bool)
+        
+        
+        first_rare_class_idx = 0
+        for i, c in enumerate(action_categories):
+            one_hot_target[i][self.class2idx[c]] = True
+            if c == self.idx2class[self.labels[idx] + 1]:
+                first_rare_class_idx = i
 
-            one_hot_target = torch.zeros(
-                (len(action_categories), self.num_classes),
-                dtype=torch.bool)
+        one_hot_target = one_hot_target.to(torch.long)
 
-            for i, c in enumerate(action_categories):
-                one_hot_target[i][self.class2idx[c]] = True
+        if len(frame_video_annots) > 1:
+            print(f"INFO: {len(frame_video_annots)} annots for {video_path} at {keyframe_id}")
+            
+        data = {
+            "path": f"{video_path}-{keyframe_id}",
+            "video": video_data,  # [CxTxHxW]
+            "target": one_hot_target,  # [N, cls]
+            "bbox": boxes,  # [N, 4]
+            "rare_class_idx": first_rare_class_idx,
+        }
 
-            one_hot_target = one_hot_target.to(torch.long)
+        if self.video_transform:
+            data = self.video_transform(data)
+        
+        del data["rare_class_idx"]
+            
+        video_h, video_w = data['video'].shape[-2:]
+        data['bbox'] = BoxList(data['bbox'], (video_w, video_h))
 
-            if len(frame_video_annots) > 1:
-                print(f"INFO: {len(frame_video_annots)} annots for {video_path} at {keyframe_id}")
-                
-            data = {
-                "path": f"{video_path}-{keyframe_id}",
-                "video": video_data, # [CxTxHxW]
-                "target": one_hot_target, # [N, cls]
-                "bbox": boxes, # [N, 4]
-            }
-
-            if self.video_transform:
-                data = self.video_transform(data)
-                
-            video_h, video_w = data['video'].shape[-2:]
-            data['bbox'] = BoxList(data['bbox'], (video_w, video_h))
-
-            yield data
+        return data
 
 
 def collate_fn(batch):
