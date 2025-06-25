@@ -1,12 +1,17 @@
 import cv2
 import scipy
 import torch
+import random
 import torch.nn as nn
 import numpy as np
 from typing import Tuple
 from ultralytics import YOLO
 from models.box_list import BoxList
 from data.data_transform import get_transform
+from transforms_impl.transforms import (
+    Compose,
+    ShortSideScaleWithBoxes,
+)
 
 
 def match_bboxes(bbox_gt, bbox_pred, IOU_THRESH=0.5):
@@ -108,36 +113,62 @@ def rescale_bboxes(
         device=boxes.device, dtype=boxes.dtype)
     return boxes * scales
 
+
 class YOLO_VideoMAE:
     def __init__(
         self, video_model, criterion,          
-        yolo_imgsz=640, 
         yolo_model_name="yolo11n.pt",
+        yolo_imgsz=640,
+        yolo_lower_conf=0.25,
+        yolo_upper_conf=0.5,
+        yolo_iou=0.7,
         enable_logging=False,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         self.device = device
+        self.phase = 'test'
         
         self.yolo_imgsz = yolo_imgsz
+        self.yolo_lower_conf = yolo_lower_conf
+        self.yolo_upper_conf = yolo_upper_conf
+        self.yolo_iou = yolo_iou
+        self.yolo_classes = [0]
+        self.yolo_agnostic_nms = True
+        self.yolo_verbose_inference = False
+        self.yolo_model = YOLO(
+            yolo_model_name
+        ).to(self.device)
+        
+        self.video_model = video_model
+        self.criterion = criterion
+        
+        self.unknown_class_limit = 3
+        
         self.video_model_img_size = 224
         self.max_pixel_value = 255
         self.clip_len = 16
         
-        self.yolo_model = YOLO(yolo_model_name)
-        self.video_model = video_model
-        self.criterion = criterion
-        self.video_transform = get_transform(
-            clip_len=self.clip_len, 
-            clip_size=self.video_model_img_size)
+        self.video_transform = Compose([
+            ShortSideScaleWithBoxes(size=self.video_model_img_size),
+        ])
         
         self.total_targets = 0
         self.matched_targets = 0
         
         self.enable_logging = enable_logging
-        self.yolo_verbose_inference = False
+        
+        self.limit = 1
+        self.count_equals_limit = 0
+        self.count_classes_ = {i: 0 for i in range(self.video_model.num_classes)}
         
     def get_match_rate(self):
-        return self.matched_targets / self.total_targets
+        return 0 if self.total_targets == 0 else self.matched_targets / self.total_targets
+    
+    def train(self):
+        self.phase = 'train'
+    
+    def test(self):
+        self.phase = 'test'
         
     def draw_rect_image(
         self,
@@ -181,16 +212,23 @@ class YOLO_VideoMAE:
         
         results = self.yolo_model(
             image/self.max_pixel_value, 
+            conf=self.yolo_lower_conf,
+            iou=self.yolo_iou,
             imgsz=self.yolo_imgsz, 
-            verbose=self.yolo_verbose_inference
+            agnostic_nms=self.yolo_agnostic_nms,
+            classes=self.yolo_classes,
+            verbose=self.yolo_verbose_inference,
         )
         
         if self.enable_logging:
             print(f"YOLO model output: {len(results)=}")
         
+        # For training
         gt_targets = [] # targets (List[Dict])
-        yolo_proposals = [] # proposals (List[Tensor[N, 4]]) 
         yolo_targets = []
+        
+        # For testing and training
+        yolo_proposals = [] # proposals (List[Tensor[N, 4]]) 
         batch_scores = []
         
         for i, result in enumerate(results):
@@ -204,7 +242,7 @@ class YOLO_VideoMAE:
             scores = []
             
             for box, cls_name, conf in zip(xyxy, names, confs):
-                if conf < 0.3 or cls_name != 'person':
+                if conf < self.yolo_upper_conf:
                     continue
                 
                 # label = f"{cls_name} {conf:.2f}"
@@ -215,26 +253,25 @@ class YOLO_VideoMAE:
                 
             if len(bboxes) == 0:
                 bboxes.append(torch.Tensor([0, 0, 1, 1]))
+                scores.append(0.0)
             
             if self.enable_logging:           
-                print(f"Gathered {len(bboxes)} proposals for image #{i}")
+                print(f"\nGathered {len(bboxes)} proposals for image #{i}")
             
             bboxes = BoxList(torch.stack(bboxes, dim=0).to(self.device), image_size=(w, h)) \
                 .resize((self.video_model_img_size, self.video_model_img_size))  
-            
-            yolo_proposals.append(bboxes)
-            batch_scores.append(scores)
+            scores = torch.tensor(scores).to(self.device)
             
             gt_target_dict = {}
             gt_target_dict['video'] = x[i].detach().clone()
             gt_target_dict['bbox'] = gt_boxes[i].bbox.detach().clone()  # [N, 4] float tensor
             gt_target_dict['target'] = gt_labels[i].argmax(dim=1).detach().clone() # Tensor[N]
-            
+        
             # for box in target_dict['bbox']:
             #     self.draw_rect_image(img_with_boxes, box.tolist(), color=(255, 0, 0))
             # plt.imshow(img_with_boxes)
             # plt.show()
-                
+            
             gt_target_dict = self.video_transform(gt_target_dict)
             gt_targets.append(gt_target_dict)
             
@@ -242,42 +279,128 @@ class YOLO_VideoMAE:
                 print(f"{gt_target_dict['bbox']=}")
                 print(f"{gt_target_dict['target']=}")
                 print(f"{bboxes.bbox=}")
-            
-            UKNOWN_CLS = 0
+                
             idxs_true, idxs_pred, ious, labels_matched = match_bboxes(gt_target_dict['bbox'], bboxes.bbox)
+            idxs_pred = torch.tensor(idxs_pred, device=self.device)
             
             assert len(idxs_true) == len(idxs_pred), "true and pred idxs len should be equal"
-            
-            if self.enable_logging:
-                print(f"Matching info:\n{idxs_true=}\n{idxs_pred=}\n{ious=}\n{labels_matched=}\n")
-            
-            yolo_target = torch.full(size=(len(bboxes),), fill_value=UKNOWN_CLS).to(self.device)
-            yolo_target[idxs_pred] = gt_target_dict['target'][idxs_true]
-            
-            if self.enable_logging:
-                print(f"{yolo_target=}")
             
             self.total_targets += len(gt_target_dict['bbox'])
             self.matched_targets += len(idxs_pred) 
             
-            # Change target dict to match yolo bboxes
-            yolo_targets.append(yolo_target) # Tensor[N]
+            if self.enable_logging:
+                print(f"\nMatching info:\n{idxs_true=}\n{idxs_pred.tolist()=}\n{ious=}\n{labels_matched=}")
             
+            if self.phase == 'train':
+                # # Create mask for matched boxes
+                # matched_mask = torch.zeros(len(bboxes), dtype=torch.bool)
+                # matched_mask[idxs_pred] = True
+                # # Get indices of non-matched boxes
+                # non_matched_indices = torch.where(~matched_mask)[0].to(device)
+                # # Select up to 3 non-matched boxes
+                # num_non_matched = min(self.unknown_class_limit, len(non_matched_indices))
+                # # Combine matched and selected non-matched indices
+                # keep_indices = torch.cat([idxs_pred, non_matched_indices[:num_non_matched]]).unique()
+                # # Filter boxes and scores
+                # filtered_bboxes = bboxes.keep_boxes(keep_indices)
+                # filtered_scores = scores_tensor[keep_indices]
+
+                # Map original matched indices to new indices
+                # new_indices = torch.where(torch.isin(keep_indices, idxs_pred))[0]
+                
+                UKNOWN_CLS = 0
+                yolo_target = torch.full(size=(len(bboxes),), fill_value=UKNOWN_CLS).to(self.device)
+                yolo_target[idxs_pred] = gt_target_dict['target'][idxs_true]
+            
+                # permute bboxes to match yolo_target
+                # bboxes = BoxList(bboxes.bbox[idxs_pred], bboxes.size, bboxes.mode)
+                
+                remove_label_idx = []
+                for i, l in enumerate(yolo_target.cpu().detach().numpy()):
+                    cls_count = self.count_classes_[l] + 1
+                    if cls_count > self.limit:
+                        remove_label_idx.append(i)
+                    elif cls_count == self.limit:
+                        self.count_equals_limit += 1
+                        self.count_classes_[l] += 1
+                    else:
+                        self.count_classes_[l] += 1
+                        
+                assert all([v <= self.limit for v in self.count_classes_.values()])
+            
+                if self.count_equals_limit == len(self.count_classes_):
+                    self.limit += 1
+                    self.count_equals_limit = 0
+                    
+                if len(remove_label_idx) == len(yolo_target): 
+                    random_index = random.randint(0, len(remove_label_idx) - 1)
+                    removed_element = remove_label_idx.pop(random_index)
+                    self.count_classes_[yolo_target.cpu().detach().numpy()[removed_element]] += 1
+                    self.count_equals_limit = 0
+                    self.limit += 1
+                
+                # Create a mask to keep indices that are not in remove_label_idx
+                keep_mask = torch.ones(len(yolo_target), dtype=torch.bool)
+                keep_mask[remove_label_idx] = False
+                
+                print(f"\nInfo about rejecting samples:")
+                print('\n'.join(f"{k}: {v}" for k, v in self.count_classes_.items()))
+                print(f"{self.count_equals_limit=}")
+                print(f"{remove_label_idx=}")
+                print(f"{keep_mask=}")
+                print(f"Before {yolo_target=}")
+
+                yolo_target = yolo_target[keep_mask]
+                
+                bboxes = bboxes.keep_boxes(keep_mask)
+                scores = scores[keep_mask]
+                
+                if self.enable_logging:
+                    print("\nFinal yolo_target:")
+                    print(f"{yolo_target=}")
+            
+                # Change target dict to match yolo bboxes
+                yolo_targets.append(yolo_target) # Tensor[N]
+                
+            bboxes = bboxes.enlarge(10.0)
+            yolo_proposals.append(bboxes)
+            batch_scores.append(scores)
+                
         x = torch.stack([t['video'] for t in gt_targets], dim=0)
-        labels = torch.cat(yolo_targets, dim=0)
         
         if self.enable_logging:
             print(f"\nInput video shape: {x.shape=}")
-            print(f"Target shape: {labels.shape=} {labels=}")
+            print("Overall proposals:")
+            print(f"{yolo_proposals=}")
         
         logits = self.video_model(x, yolo_proposals) # Tensor[n, num_cls]
         
         if self.enable_logging:
-            print(f"VideoMAE results shape: {logits.shape=}")
+            print(f"\nVideoMAE results shape: {logits.shape=}")
         
         scores = torch.softmax(logits, dim=1) # Tensor[n, num_cls]
-    
-        losses = {'loss': self.criterion(logits, labels)}
+        
+        # For training
+        losses = None
+        if self.phase == 'train':
+            labels = torch.cat(yolo_targets, dim=0)
+            
+            if self.enable_logging:
+                print(f"\nTarget shape: {labels.shape=}")
+                print("Overall labels:")
+                print(f"{labels=}")
+            
+            print(f"\nDistribution stat:")
+            print('\n'.join(f"{k}: {v}" for k, v in self.count_classes_.items()))
+            print(f"{remove_label_idx=}") 
+            print(f"{self.limit=}")
+            
+            counts = torch.tensor(list(self.count_classes_.values()),  dtype=torch.float32)
+            weights = 1.0 / counts
+            weights = weights / weights.max()
+        
+            losses = {'loss': self.criterion(logits, labels, weights)}
+        
         detection_results = []
         
         prev = 0
