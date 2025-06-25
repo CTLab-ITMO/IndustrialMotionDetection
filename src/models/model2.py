@@ -27,7 +27,7 @@ def configure_detection_head(embed_dim, num_class):
     head_output_size: Tuple[int] = (1, 1, 1)
 
     # Head configs.
-    head_activation: Callable = nn.Sigmoid
+    head_activation: Callable = None
     head_output_with_global_average: bool = True
     head_spatial_resolution: Tuple[int] = (7, 7)
     head_spatial_scale: float = 1.0 / 16.0
@@ -469,10 +469,13 @@ class VideoMAEV2(nn.Module):
         B = x.size(0)
 
         x = self.patch_embed(x)
+        B, width, t, h, w = x.size()
+        x = x.flatten(2).transpose(1, 2)
 
         if self.pos_embed is not None:
             x = x + self.pos_embed.expand(B, -1, -1).type_as(x).to(
                 x.device).clone().detach()
+        
         x = self.pos_drop(x)
 
         for blk in self.blocks:
@@ -480,11 +483,15 @@ class VideoMAEV2(nn.Module):
                 x = cp.checkpoint(blk, x)
             else:
                 x = blk(x)
-
-        if self.fc_norm is not None:
-            return self.fc_norm(x.mean(1))
-        else:
-            return self.norm(x[:, 0])
+        
+        x = self.norm(x)  # [b thw=8x14x14 c=768]
+        x = x.reshape(B, t, h, w, -1).permute(0, 4, 1, 2, 3) # [b c t h w]
+        x = x.mean(dim=2, keepdim=True)  # [b c 1 h w]
+        # if self.fc_norm is not None:
+        #     return self.fc_norm(x.mean(1))
+        # else:
+        #     return self.norm(x[:, 0])
+        return x
         
     def convert_to_roi_format(self, boxes, dtype, device):
         bbox_list = list()
@@ -501,7 +508,7 @@ class VideoMAEV2(nn.Module):
         rois = torch.cat([ids, concat_boxes], dim=1)
         return rois 
 
-    def forward(self, x):
+    def forward(self, x, proposals):
         x = self.forward_features(x)
         print(f"{x.shape=}")
         # x = self.head_dropout(x)
