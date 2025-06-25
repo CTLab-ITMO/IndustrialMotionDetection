@@ -231,13 +231,17 @@ def random_crop_with_boxes(
     x_offset = 0
     if width > size:
         x_offset = int(np.random.randint(0, width - size))
+    return crop_with_boxes(images, size, x_offset, y_offset)
+
+def crop_with_boxes(
+    images: torch.Tensor, size: int, boxes: torch.Tensor, x_offset: int, y_offset: int
+) -> Tuple[torch.Tensor, torch.Tensor]:
     cropped = images[:, :, y_offset : y_offset + size, x_offset : x_offset + size]
 
     cropped_boxes = crop_boxes(boxes, x_offset, y_offset)
     return cropped, clip_boxes_to_image(
         cropped_boxes, cropped.shape[-2], cropped.shape[-1]
     )
-
 
 def _uniform_crop_helper(images: torch.Tensor, size: int, spatial_idx: int):
     """

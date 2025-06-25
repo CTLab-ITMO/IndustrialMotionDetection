@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import torch
+import numpy as np
 import transforms_impl.functional
 import torchvision.transforms
 from torchvision.transforms import _functional_video as F
@@ -253,6 +254,73 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         cropped_x, cropped_boxes = transforms_impl.functional.random_crop_with_boxes(
             x, self._size, boxes
+        )
+        
+        # Calculate new box areas
+        new_areas = (cropped_boxes[:, 2] - cropped_boxes[:, 0]) * (cropped_boxes[:, 3] - cropped_boxes[:, 1])
+        
+        # Filter boxes where area is reduced by <= 75%
+        # Also handle cases where original_area is 0 (though this shouldn't happen with valid boxes)
+        valid_indices = (new_areas / (original_areas + 1e-6)) > 0.75
+        
+        target['video'] = cropped_x
+        target['target'] = target['target'][valid_indices]
+        target['bbox'] = cropped_boxes[valid_indices]
+        
+        return target
+
+
+class BoxDependentCropVideoWithBoxes(torch.nn.Module):
+    """
+    ``nn.Module`` wrapper for ``transforms_impl.functional.short_side_scale``.
+    """
+
+    def __init__(
+        self, size: int, interpolation: str = "bilinear", backend: str = "pytorch"
+    ):
+        super().__init__()
+        self._size = size
+        self._interpolation = interpolation
+        self._backend = backend
+
+    def forward(
+        self, 
+        target: Dict[str, torch.Tensor]
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Args:
+            x (torch.Tensor): video tensor with shape (C, T, H, W).
+        """
+        assert 'rare_class_idx' in target, 'rare_class_idx not in dict'
+        
+        x = target['video']
+        boxes = target['bbox']
+        
+        y_offset = 0
+        
+        box_offset_min = int(torch.min(boxes[target['rare_class_idx']][[0, 2]]).item())
+        box_offset_max = int(torch.max(boxes[target['rare_class_idx']][[0, 2]]).item())
+        
+        x_offset = 0
+        width = x.shape[3]
+        if width > self._size:
+            left = max(0, box_offset_max - self._size)
+            right = min(width - self._size, box_offset_min)
+            
+            if left <= right:
+                x_offset = int(np.random.randint(left, right + 1))  # +1 because high is exclusive
+            else:
+                # Handle case where bbox cannot fit (e.g., resize self._size or skip)
+                raise ValueError(
+                    f"Bounding box cannot fit in crop: "
+                    f"bbox width {box_offset_max - box_offset_min} > crop size {self._size}"
+                )
+        
+        # Calculate original box areas
+        original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        
+        cropped_x, cropped_boxes = transforms_impl.functional.crop_with_boxes(
+            x, self._size, boxes, x_offset=x_offset, y_offset=y_offset
         )
         
         # Calculate new box areas
