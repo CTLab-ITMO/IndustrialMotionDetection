@@ -101,6 +101,7 @@ class ActionDetectionDataset(IterableDataset):
         self.augmentations = augmentations
         self.background_prob = background_prob
         self.data = pd.read_csv(csv_file, low_memory=False)
+        self.data = self.data[self.data["action_category"].isin(class_to_idx.keys())]
         self.curr_path = current_dir
         self.annots = {}
         class_frequencies = Counter()
@@ -109,7 +110,7 @@ class ActionDetectionDataset(IterableDataset):
         for _, r in self.data.iterrows():
             (self.annots.setdefault(r.video_path, {}).
              setdefault(int(r.keyframe_id), []).append(r))
-            if r.action_category != "person":
+            if r.action_category != "person"  and r.action_category in class_to_idx.keys():
                 class_frequencies[r.action_category] += 1
 
         self.video_paths = list(self.annots.keys())

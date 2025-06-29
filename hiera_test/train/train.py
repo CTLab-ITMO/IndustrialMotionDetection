@@ -47,8 +47,8 @@ def train():
     clip_len = 16
     frame_sample_rate = 2
 
-    train_epoch_size_ratio = 8
-    val_epoch_size_ratio = 8
+    train_epoch_size_ratio = 10
+    val_epoch_size_ratio = 10
 
     exp_name = f"hiera_mydataset_{total_epochs_overall}ep_{batch_size}bs_{clip_len}cliplen-{frame_sample_rate}fsr-2"
 
@@ -69,8 +69,8 @@ def train():
     # ]
 
     cls = [
-        "bottle",
-        "eating",
+        # "bottle",
+        # "eating",
         "smoking",
         "talking phone"
     ]
@@ -185,8 +185,8 @@ def train():
     print(f"Trainable parameters: {count_parameters(model)}")
 
     start_epoch = 0
-    load_checkpoint = "runs/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2__2025__20250620_091928/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2_head_epoch9.pth"
-    # load_checkpoint = None
+    # load_checkpoint = "runs/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2__2025__20250620_091928/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2_head_epoch9.pth"
+    load_checkpoint = None
     if load_checkpoint is not None:
         checkpoint = torch.load(load_checkpoint, weights_only=True, map_location=device)
         model.load_state_dict(checkpoint['model'])

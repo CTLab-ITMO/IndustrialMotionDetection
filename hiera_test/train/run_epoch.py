@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -107,7 +108,7 @@ def run_epoch(phase, dataloader,
     epoch_loss = running_loss / batch_count
     epoch_mAP = 0
     epoch_AP = {f"AP-{i}": 0.0 for i in range(num_classes)}
-    prec = {f"precison {i}": 0 for i in range(num_classes)}
+    prec = {f"precision {i}": 0 for i in range(num_classes)}
     recall = {f"recall {i}": 0 for i in range(num_classes)}
     if phase == 'test' and all_bounding_boxes.getBoundingBoxes():
         metrics = evaluator.GetPascalVOCMetrics(all_bounding_boxes, IOUThreshold=iouThreshold)
@@ -117,8 +118,8 @@ def run_epoch(phase, dataloader,
         for metric_per_class in metrics:
             cl = metric_per_class['class']
             ap = metric_per_class['AP']
-            prec[f"precision {cl}"] = metric_per_class["precision"]
-            recall[f"recall {cl}"] = metric_per_class["recall"]
+            prec[f"precision {cl}"] = np.mean(metric_per_class["precision"])
+            recall[f"recall {cl}"] = np.mean(metric_per_class["recall"])
             if metric_per_class['total positives'] > 0:
                 valid_classes += 1
                 acc_AP += ap
