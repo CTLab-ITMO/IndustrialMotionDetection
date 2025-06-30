@@ -10,7 +10,7 @@ class YamlConfigReader:
         """
         self.config_file_path = Path(config_file_path)
         self.config = None
-        
+
         self.load()
 
     def load(self):
