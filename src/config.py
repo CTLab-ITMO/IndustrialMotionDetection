@@ -1,32 +1,104 @@
+import yaml
 from pathlib import Path
 
-from dotenv import load_dotenv
-from loguru import logger
+class YamlConfigReader:
+    def __init__(self, config_file_path):
+        """
+        Initialize the YamlConfigReader with the path to the YAML config file.
 
-# Load environment variables from .env file if it exists
-load_dotenv()
+        :param config_file_path: Path to the YAML configuration file.
+        """
+        self.config_file_path = Path(config_file_path)
+        self.config = None
 
-# Paths
-PROJ_ROOT = Path(__file__).resolve().parents[1]
-logger.info(f"PROJ_ROOT path is: {PROJ_ROOT}")
+        self.load()
 
-DATA_DIR = PROJ_ROOT / "content"
-RAW_DATA_DIR = DATA_DIR / "raw"
-INTERIM_DATA_DIR = DATA_DIR / "interim"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
-EXTERNAL_DATA_DIR = DATA_DIR / "external"
+    def load(self):
+        """
+        Load and parse the YAML configuration file.
 
-MODELS_DIR = PROJ_ROOT / "models"
+        :raises FileNotFoundError: If the config file does not exist.
+        :raises yaml.YAMLError: If there is an error parsing the YAML file.
+        """
+        if not self.config_file_path.exists():
+            raise FileNotFoundError(f"Config file not found: {self.config_file_path}")
 
-REPORTS_DIR = PROJ_ROOT / "reports"
-FIGURES_DIR = REPORTS_DIR / "figures"
+        with open(self.config_file_path, 'r') as file:
+            try:
+                self.config = yaml.safe_load(file)
+            except yaml.YAMLError as e:
+                raise yaml.YAMLError(f"Error parsing YAML file: {e}")
 
-# If tqdm is installed, configure loguru with tqdm.write
-# https://github.com/Delgan/loguru/issues/135
-try:
-    from tqdm import tqdm
+    def get(self, key, default=None):
+        """
+        Get a value from the configuration by key.
 
-    logger.remove(0)
-    logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
-except ModuleNotFoundError:
-    pass
+        :param key: The key to retrieve from the configuration.
+        :param default: The default value to return if the key is not found.
+        :return: The value associated with the key, or the default value if the key is not found.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        return self.config.get(key, default)
+
+    def get_all(self):
+        """
+        Get the entire configuration as a dictionary.
+
+        :return: The entire configuration dictionary.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        return self.config
+
+    def update(self, key, value):
+        """
+        Update a value in the configuration by key.
+
+        :param key: The key to update in the configuration.
+        :param value: The new value to set for the key.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        self.config[key] = value
+
+    def update_from_dict(self, update_dict):
+        """
+        Update the configuration with key-value pairs from a dictionary.
+
+        :param update_dict: A dictionary containing key-value pairs to update in the configuration.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        self.config.update(update_dict)
+
+    def save(self):
+        """
+        Save the current configuration back to the YAML file.
+
+        :raises yaml.YAMLError: If there is an error writing the YAML file.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        with open(self.config_file_path, 'w') as file:
+            try:
+                yaml.safe_dump(self.config, file, default_flow_style=False)
+            except yaml.YAMLError as e:
+                raise yaml.YAMLError(f"Error writing YAML file: {e}")
+
+    def delete(self, key):
+        """
+        Delete a key from the configuration.
+
+        :param key: The key to delete from the configuration.
+        """
+        if self.config is None:
+            raise ValueError("Configuration not loaded. Call load() first.")
+
+        if key in self.config:
+            del self.config[key]

@@ -1,4 +1,5 @@
 # IndustrialMotionDetection
+
 <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
 <a href="https://itmo.ru/"><img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg"></a>
 
@@ -6,7 +7,6 @@
   <img src="examples/talk_on_phone.jpg" width="300">
   <img src="examples/people_on_roof.jpg" width="300">
 </p>
-
 
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
@@ -24,18 +24,39 @@
 9) Нахождение человека в запретной зоне
 10) Саботаж камер 
 
+## Как использовать?
+
+- склонируйте репозиторий
+
+```bash
+git clone -b ruslan-dev https://github.com/CTLab-ITMO/IndustrialMotionDetection.git
+cd IndustrialMotionDetection
+```
+
+- настройте локальный venv с помощью poetry.lock и pyproject.toml
+
 ## Распознавание действий
 
 Поскольку действия, которые мы анализируем, имеют различный характер и требуют разных подходов к обработке данных, мы приняли решение разделить их на отдельные модели.
 
 В результате мы разработали следующую структуру:
 
+### Наборы данных
+
+- Смотрите [DATASETS.md](src/data/DATASETS.md) для ознакомления с загрузкой доступных наборов данных
+
 ### **Модель VideoMAE** 
 - Перемещение предметов, оборудования
 - Использование смартфона/телефона
 - Взаимодействие с другими людьми (разговор, рукопожатие, объятие)
 
-<ins> сюда закинуть краткое описание модели и действий</ins>
+#### Полезные материалы
+
+- `notebooks/video_mae_pretrain.ipynb` - запуск предобучения VideoMAE
+
+- `notebooks/videomae-train.ipynb` - обучение локализации для VideoMAE + YOLO
+
+- `notebooks/meva-processed-eda.ipynb` - EDA набора данных MEVA
 
 ### **Модель Yolo Pose Estimation + DepthAnything** 
 - Подъем по лестнице с тремя точками опоры: проверка соблюдения человеком правил безопасности при подъеме по лестнице, используя три точки опоры для предотвращения падений и травм.
@@ -46,13 +67,12 @@
 
 Модель состоит из YOLOv11 Pose Estimation, DepthAnything и SAM&DINO. 
 
-### **Модель** 
-- Использование инструментов
+### **Модель DINOv2** 
+- Использование инструментов: использование инструментов часто применяемых на производстве, таких как шуруповерт, плоскозубцы, дрель, циркулярная пила, сварка, полирование металла.
 - Нахождение на рабочем месте в определенной зоне
-- Курение
+- Курение: выявление случаев курения в неположенных для этого местах, людей пытающихся скрыть курение.
 
 <ins> сюда закинуть краткое описание модели и действий</ins>
-
 
 ## Архитектура проекта
 
@@ -104,3 +124,8 @@
     │
     └── plots.py                <- Code to create visualizations
 ```
+
+## Полезные источники
+
+- [MEVA dataset](https://mevadata.org/)
+- [VideoMAE Action Detection](https://github.com/MCG-NJU/VideoMAE-Action-Detection)
