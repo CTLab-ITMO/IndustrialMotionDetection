@@ -6,9 +6,7 @@ import pandas as pd
 from torch import optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from hiera_test.train.run_epoch import train_model
-import sys
-
+from src.train.run_epoch import train_model
 
 import numpy as np
 import torch
@@ -18,9 +16,9 @@ from transformers import AutoImageProcessor
 
 from src.metrics_impl.Evaluator import Evaluator
 from src.metrics_impl.utils import BBFormat, CoordinatesType
-from hiera_test.train.dataset import ActionDetectionDataset, collate_fn
-from hiera_test.train.model import HieraActionDetector
-from hiera_test.train.utils import summarize_csv_labels
+from src.data.dataset_collected import ActionDetectionDataset, collate_fn
+from src.models.model_hiera_base import HieraActionDetector
+from src.train.utils import summarize_csv_labels
 import kornia.augmentation as K
 
 import decord
@@ -56,7 +54,7 @@ def train():
     log_dir = f"runs/{run_name}"
     writer = SummaryWriter(log_dir=log_dir)
 
-    checkpoint_dir = os.path.join("runs", run_name)
+    checkpoint_dir = os.path.join("../../hiera_test/train/runs", run_name)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # cls = [
@@ -75,11 +73,11 @@ def train():
         "talking phone"
     ]
 
-    train_csv_file_path = "../dataset_final/train_dataset.csv"
-    val_csv_file_path = "../dataset_final/part_2/project-2_annotations.csv"
+    train_csv_file_path = "../../hiera_test/dataset_final/train_dataset.csv"
+    val_csv_file_path = "../../hiera_test/dataset_final/part_2/project-2_annotations.csv"
 
-    df1 = pd.read_csv("../dataset_final/part_1/project-1_annotations.csv")
-    df2 = pd.read_csv("../dataset_final/synthetic/synthetic_annotations.csv")
+    df1 = pd.read_csv("../../hiera_test/dataset_final/part_1/project-1_annotations.csv")
+    df2 = pd.read_csv("../../hiera_test/dataset_final/synthetic/synthetic_annotations.csv")
     df2["video_path"] = "dataset_final/" + df2["video_path"]
     df3 = pd.concat([df1, df2], axis=0, ignore_index=True)
     df3.to_csv(train_csv_file_path, index=False)
@@ -113,7 +111,7 @@ def train():
     )
 
     image_datasets = dict()
-    image_datasets['train'] = ActionDetectionDataset("..", train_csv_file_path,
+    image_datasets['train'] = ActionDetectionDataset("../../hiera_test", train_csv_file_path,
                                                      oversample=True,
                                                      oversample_ratio=3,
                                                      epoch_size_ratio=train_epoch_size_ratio,
@@ -124,7 +122,7 @@ def train():
                                                      length_file=f"./{train_csv_file_path.split("/")[-1]}.json",
                                                      class_to_idx=class_to_idx)
 
-    image_datasets['test'] = ActionDetectionDataset("..", val_csv_file_path,
+    image_datasets['test'] = ActionDetectionDataset("../../hiera_test", val_csv_file_path,
                                                     oversample=False,
                                                     epoch_size_ratio=val_epoch_size_ratio,
                                                     processor=image_processor,

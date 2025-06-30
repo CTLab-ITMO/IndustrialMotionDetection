@@ -7,7 +7,7 @@ from tqdm import tqdm
 from src.metrics_impl.BoundingBox import BoundingBox
 from src.metrics_impl.BoundingBoxes import BoundingBoxes
 from src.metrics_impl.utils import BBType
-from hiera_test.train.utils import draw_bboxes
+from src.train.utils import draw_bboxes
 
 
 def run_epoch(phase, dataloader,
