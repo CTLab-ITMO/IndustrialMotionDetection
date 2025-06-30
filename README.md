@@ -1,75 +1,131 @@
-# IndustrialMotionDetection. How to start?
+# IndustrialMotionDetection
 
-- clone repository
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
+<a href="https://itmo.ru/"><img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg"></a>
+
+<p align="center">
+  <img src="examples/talk_on_phone.jpg" width="300">
+  <img src="examples/people_on_roof.jpg" width="300">
+</p>
+
+**IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
+
+В условиях существующих систем видеонаблюдения существует потребность в инструментах, способных точно идентифицировать некоторые действия работников и своевременно предупреждать о потенциально опасных ситуациях. На данный момент решения в этой области ограничены коммерческими продуктами, доступ к которым затруднен для широкого круга пользователей, либо носят узкоспециализированный характер и требуют адаптации под конкретные условия применения.
+
+**В результате чего наша команда выделила набор актуальных действий:**
+1) Перемещение предметов, оборудования
+2) Использование инструментов
+3) Использование смартфона/телефона
+4) Курение
+5) Прием пищи или напитков
+6) Нахождение на рабочем месте в определенной зоне
+7) Взаимодействие с другими людьми (разговор, рукопожатие, объятие) 
+8) Поднятие по лестнице с тремя точками опоры
+9) Нахождение человека в запретной зоне
+10) Саботаж камер 
+
+## Как использовать?
+
+- склонируйте репозиторий
 
 ```bash
 git clone -b ruslan-dev https://github.com/CTLab-ITMO/IndustrialMotionDetection.git
 cd IndustrialMotionDetection
 ```
 
-- setup local venv using poetry.lock and pyproject.toml
+- настройте локальный venv с помощью poetry.lock и pyproject.toml
 
-## Training 
+## Распознавание действий
 
-- `notebooks/video_mae_pretrain.ipynb` - notebook for pretraining 
+Поскольку действия, которые мы анализируем, имеют различный характер и требуют разных подходов к обработке данных, мы приняли решение разделить их на отдельные модели.
 
-- `notebooks/videomae-train.ipynb` - train localization task by VideoMAE + YOLO pipeline
+В результате мы разработали следующую структуру:
 
-- `notebooks/meva-processed-eda.ipynb` - meva eda datasets processing
+### Наборы данных
 
-## Datasets
+- Смотрите [DATASETS.md](src/data/DATASETS.md) для ознакомления с загрузкой доступных наборов данных
 
-- Refer to [DATASETS.md](src/data/DATASETS.md) in order to use avaliable datasets 
+### **Модель VideoMAE** 
+- Перемещение предметов, оборудования
+- Использование смартфона/телефона
+- Взаимодействие с другими людьми (разговор, рукопожатие, объятие)
 
-## Project Structure
+#### Полезные материалы
+
+- `notebooks/video_mae_pretrain.ipynb` - запуск предобучения VideoMAE
+
+- `notebooks/videomae-train.ipynb` - обучение локализации для VideoMAE + YOLO
+
+- `notebooks/meva-processed-eda.ipynb` - EDA набора данных MEVA
+
+### **Модель Yolo Pose Estimation + DepthAnything** 
+- Подъем по лестнице с тремя точками опоры: проверка соблюдения человеком правил безопасности при подъеме по лестнице, используя три точки опоры для предотвращения падений и травм.
+
+- Нахождение человека в запретной зоне: инентификация случаев несанкционированного доступа в зоны, представляющие потенциальную опасность или требующие специального разрешения.
+
+- Саботаж камер: обнаружение попыток вмешательства в работу камер, такие как их блокировка, повреждение или намеренное изменение угла обзора.
+
+Модель состоит из YOLOv11 Pose Estimation, DepthAnything и SAM&DINO. 
+
+### **Модель DINOv2** 
+- Использование инструментов: использование инструментов часто применяемых на производстве, таких как шуруповерт, плоскозубцы, дрель, циркулярная пила, сварка, полирование металла.
+- Нахождение на рабочем месте в определенной зоне
+- Курение: выявление случаев курения в неположенных для этого местах, людей пытающихся скрыть курение.
+
+<ins> сюда закинуть краткое описание модели и действий</ins>
+
+## Архитектура проекта
 
 ```
-.
-├── LICENSE
-├── Makefile
-├── README.md
-├── conf
-│   └── meva_preproc.yaml
+├── LICENSE            <- Open-source license if one is chosen
+├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
+├── README.md          <- The top-level README for developers using this project.
 ├── data
-│   └── MEVA
-│       └── meva_processed
-├── logfile.log
-├── models
-├── notebooks
-│   ├── meva-processed-eda.ipynb
-│   └── videomae-action-recognition.ipynb
-├── poetry.lock
-├── pyproject.toml
-├── references
-├── reports
-│   └── figures
-├── requirements.txt
-├── scripts
-│   ├── download.py
-│   └── upload.py
-├── setup.cfg
-└── src
-    ├── README.md
-    ├── __init__.py
-    ├── config.py
-    ├── logger.py
-    ├── meva_preprocessing.py
-    ├── models
-    │   └── VideoMAE
-    │       ├── __init__.py
-    │       ├── box_list.py
-    │       ├── dataset.py
-    │       ├── image_list.py
-    │       ├── metrics.py
-    │       ├── model.py
-    │       ├── predict.py
-    │       ├── preprocess.py
-    │       └── train.py
-    └── utils.py
+│   ├── external       <- Data from third party sources.
+│   ├── interim        <- Intermediate data that has been transformed.
+│   ├── processed      <- The final, canonical data sets for modeling.
+│   └── raw            <- The original, immutable data dump.
+│
+├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+│
+├── models             <- Trained and serialized models, model predictions, or model summaries
+│
+├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator's initials, and a short `-` delimited description, e.g.
+│                         `1.0-jqp-initial-data-exploration`.
+│
+├── pyproject.toml     <- Project configuration file with package metadata for 
+│                         src and configuration for tools like black
+│
+├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+│
+├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        <- Generated graphics and figures to be used in reporting
+│
+├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with `pip freeze > requirements.txt`
+│
+├── setup.cfg          <- Configuration file for flake8
+│
+└── src   <- Source code for use in this project.
+    │
+    ├── __init__.py             <- Makes src a Python module
+    │
+    ├── config.py               <- Store useful variables and configuration
+    │
+    ├── dataset.py              <- Scripts to download or generate data
+    │
+    ├── features.py             <- Code to create features for modeling
+    │
+    ├── modeling                
+    │   ├── __init__.py 
+    │   ├── predict.py          <- Code to run model inference with trained models          
+    │   └── train.py            <- Code to train models
+    │
+    └── plots.py                <- Code to create visualizations
 ```
 
-## Sources
+## Полезные источники
 
 - [MEVA dataset](https://mevadata.org/)
 - [VideoMAE Action Detection](https://github.com/MCG-NJU/VideoMAE-Action-Detection)
- 
