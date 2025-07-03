@@ -15,7 +15,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 
-from metrics_impl.utils import MethodAveragePrecision, BBType, BBFormat
+from src.metrics_impl.utils import MethodAveragePrecision, BBType, BBFormat
 
 
 class Evaluator:
@@ -76,6 +76,8 @@ class Evaluator:
         classes = sorted(classes)
         # Precision x Recall is obtained individually by each class
         # Loop through by classes
+        # print(detections)
+        # print(groundTruths)
         for c in classes:
             # Get only detection of class c
             dects = []
