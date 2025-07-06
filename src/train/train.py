@@ -31,7 +31,6 @@ def count_parameters(model):
 
 def train():
     seed = 2025
-    torch_deterministic = True
 
     lr = 3 * 1e-4
 
@@ -183,7 +182,7 @@ def train():
     print(f"Trainable parameters: {count_parameters(model)}")
 
     start_epoch = 0
-    # load_checkpoint = "runs/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2__2025__20250620_091928/hiera_mydataset_20ep_6bs_16cliplen-2fsr-2_head_epoch9.pth"
+    # specify checkpoint path
     load_checkpoint = None
     if load_checkpoint is not None:
         checkpoint = torch.load(load_checkpoint, weights_only=True, map_location=device)
@@ -202,14 +201,6 @@ def train():
         optimizer_phase1 = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=1e-2)
         scheduler_phase1 = CosineAnnealingLR(optimizer_phase1, T_max=num_head_only_epochs * len(dataloaders["train"]),
                                              eta_min=lr * 0.01)
-        # if load_checkpoint is not None and "optimizer" in checkpoint:
-        #     print('Load optimizer')
-        #     optimizer_phase1.load_state_dict(checkpoint["optimizer"])
-        #
-        # if load_checkpoint is not None and "scheduler" in checkpoint:
-        #     print('Load scheduler')
-        #     scheduler_phase1.load_state_dict(checkpoint["scheduler"])
-
         train_model(
             dataloaders,
             idx_to_class,

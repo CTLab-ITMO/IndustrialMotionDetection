@@ -71,6 +71,18 @@ cd IndustrialMotionDetection
 - `src/models/action_former/train_test_utils.py` - код для обучения ActionFormer
 - `src/models/action_former/action_former.py` - код модели ActionFormer
 
+
+### **Модель Hiera** 
+- Курение
+- Разговор по телефону
+- Потребление напитков, пищи
+
+
+- `src/train/train.py` - скрипт для дообучения модели
+- `src/models/model_hiera_base.py` - код модели Hiera с добавленной головой.
+- `src/data/dataset_collected.py` - код датасета
+- `notebooks/hiera_based_model.ipynb` - пример
+
 ## Архитектура проекта
 
 ```
