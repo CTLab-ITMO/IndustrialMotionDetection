@@ -29,11 +29,12 @@
 - склонируйте репозиторий
 
 ```bash
-git clone -b ruslan-dev https://github.com/CTLab-ITMO/IndustrialMotionDetection.git
+git clone https://github.com/CTLab-ITMO/IndustrialMotionDetection.git
 cd IndustrialMotionDetection
+pip install --no-deps -r requirements.txt
 ```
 
-- настройте локальный venv с помощью poetry.lock и pyproject.toml
+- Или настройте локальный venv с помощью poetry.lock и pyproject.toml
 
 ## Распознавание действий
 
