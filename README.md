@@ -1,7 +1,11 @@
 # IndustrialMotionDetection ![itmo](https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg)
 
-![talk_on_phone](examples/talk_on_phone.jpg)
-![people_on_roof](examples/people_on_roof.jpg)
+<!-- markdownlint-disable MD033 -->
+<p align="center">
+    <img src="examples/talk_on_phone.jpg" alt='' width="300" />
+    <img src="examples/people_on_roof.jpg" alt='' width="300" />
+</p>
+<!-- markdownlint-enable MD033 -->
 
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
