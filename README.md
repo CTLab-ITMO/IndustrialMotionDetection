@@ -1,17 +1,7 @@
-# IndustrialMotionDetection
+# IndustrialMotionDetection ![itmo](https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg)
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
-
-<a href="https://itmo.ru/">
-    <img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg">
-</a>
-
-<p align="center">
-    <img src="examples/talk_on_phone.jpg" alt='' width="300" />
-    <img src="examples/people_on_roof.jpg" alt='' width="300" />
-</p>
+![talk_on_phone](examples/talk_on_phone.jpg)
+![people_on_roof](examples/people_on_roof.jpg)
 
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
