@@ -1,18 +1,11 @@
 # IndustrialMotionDetection
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/"><img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" /></a>
-<a href="https://itmo.ru/"><img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg"></a>
-
-<p align="center">
-  <img src="examples/talk_on_phone.jpg" width="300">
-  <img src="examples/people_on_roof.jpg" width="300">
-</p>
-
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
 В условиях существующих систем видеонаблюдения существует потребность в инструментах, способных точно идентифицировать некоторые действия работников и своевременно предупреждать о потенциально опасных ситуациях. На данный момент решения в этой области ограничены коммерческими продуктами, доступ к которым затруднен для широкого круга пользователей, либо носят узкоспециализированный характер и требуют адаптации под конкретные условия применения.
 
 **В результате чего наша команда выделила набор актуальных действий:**
+
 1) Перемещение предметов, оборудования
 2) Использование инструментов
 3) Использование смартфона/телефона
@@ -22,7 +15,7 @@
 7) Взаимодействие с другими людьми (разговор, рукопожатие, объятие) 
 8) Поднятие по лестнице с тремя точками опоры
 9) Нахождение человека в запретной зоне
-10) Саботаж камер 
+10) Саботаж камер
 
 ## Как использовать?
 
@@ -45,7 +38,8 @@ cd IndustrialMotionDetection
 
 - Смотрите [DATASETS.md](src/data/DATASETS.md) для ознакомления с загрузкой доступных наборов данных
 
-### **Модель VideoMAE** 
+### **Модель VideoMAE**
+
 - Перемещение предметов, оборудования
 - Использование смартфона/телефона
 - Взаимодействие с другими людьми (разговор, рукопожатие, объятие)
@@ -58,7 +52,8 @@ cd IndustrialMotionDetection
 
 - `notebooks/meva-processed-eda.ipynb` - EDA набора данных MEVA
 
-### **Модель ActionFormer** 
+### **Модель ActionFormer**
+
 - Использование ноутбука/телефона
 - Потребление пищи/напитков
 - Курение
@@ -71,12 +66,11 @@ cd IndustrialMotionDetection
 - `src/models/action_former/train_test_utils.py` - код для обучения ActionFormer
 - `src/models/action_former/action_former.py` - код модели ActionFormer
 
+### **Модель Hiera**
 
-### **Модель Hiera** 
 - Курение
 - Разговор по телефону
 - Потребление напитков, пищи
-
 
 - `src/train/train.py` - скрипт для дообучения модели
 - `src/models/model_hiera_base.py` - код модели Hiera с добавленной головой.
@@ -85,7 +79,7 @@ cd IndustrialMotionDetection
 
 ## Архитектура проекта
 
-```
+```tree
 ├── LICENSE            <- Open-source license if one is chosen
 ├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
 ├── README.md          <- The top-level README for developers using this project.
