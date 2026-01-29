@@ -1,5 +1,18 @@
 # IndustrialMotionDetection
 
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
+    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
+</a>
+
+<a href="https://itmo.ru/">
+    <img src="https://raw.githubusercontent.com/aimclub/open-source-ops/43bb283758b43d75ec1df0a6bb4ae3eb20066323/badges/ITMO_badge.svg">
+</a>
+
+<p align="center">
+    <img src="examples/talk_on_phone.jpg" alt='' width="300" />
+    <img src="examples/people_on_roof.jpg" alt='' width="300" />
+</p>
+
 **IndustrialMotionDetection** - это библиотека для распознавания действий человека на производстве.
 
 В условиях существующих систем видеонаблюдения существует потребность в инструментах, способных точно идентифицировать некоторые действия работников и своевременно предупреждать о потенциально опасных ситуациях. На данный момент решения в этой области ограничены коммерческими продуктами, доступ к которым затруднен для широкого круга пользователей, либо носят узкоспециализированный характер и требуют адаптации под конкретные условия применения.
