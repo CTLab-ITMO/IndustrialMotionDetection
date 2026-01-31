@@ -1,13 +1,12 @@
+import random
 import cv2
 import scipy
 import torch
-import random
 import torch.nn as nn
 import numpy as np
-from typing import Tuple
 from ultralytics import YOLO
 from models.box_list import BoxList
-from data.data_transform import get_transform
+from typing import Tuple
 from transforms_impl.transforms import (
     Compose,
     ShortSideScaleWithBoxes,
@@ -422,4 +421,3 @@ class YOLO_VideoMAE:
             detection_results.append(detection_result_dict)
 
         return detection_results, losses
-    
