@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import torch
 import numpy as np
-import transforms_impl.functional
+import src.transforms_impl.functional
 import torchvision.transforms
 from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
