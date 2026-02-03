@@ -2,6 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+"""
+Focal Loss implementation for binary, multi-class, and multi-label classification tasks.
+
+Based on implementation from:
+https://github.com/itakurah/Focal-loss-PyTorch
+"""
 
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2, reduction='mean', task_type='binary', num_classes=None):
