@@ -1,8 +1,8 @@
 import numpy as np
-from metrics_impl.BoundingBox import BoundingBox
-from metrics_impl.BoundingBoxes import BoundingBoxes
-from metrics_impl.utils import MethodAveragePrecision, BBType, BBFormat, CoordinatesType
-from metrics_impl.Evaluator import Evaluator
+from src.metrics_impl.BoundingBox import BoundingBox
+from src.metrics_impl.BoundingBoxes import BoundingBoxes
+from src.metrics_impl.utils import MethodAveragePrecision, BBType, BBFormat, CoordinatesType
+from src.metrics_impl.Evaluator import Evaluator
 
 
 def compute_metrics_batch_detections(
