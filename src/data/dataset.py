@@ -6,7 +6,7 @@ import pandas as pd
 from torch.utils.data import IterableDataset, Dataset
 from torch.utils.data.dataloader import DataLoader
 from collections import Counter, defaultdict
-from logger import Logger
+from src.logger import Logger
 from src.models.box_list import BoxList
 from src.video.encoded_video import EncodedVideo
 
