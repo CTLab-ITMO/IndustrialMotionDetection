@@ -2,18 +2,9 @@
 import torch
 import numpy as np
 import torchvision.transforms
+import transforms_impl.functional as transforms_impl
 from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
-from src.transforms_impl.functional import (
-    random_crop_with_boxes,
-    random_resized_crop,
-    short_side_scale_with_boxes,
-    uniform_crop,
-    short_side_scale,
-    crop_with_boxes,
-    uniform_temporal_subsample,
-    # uniform_temporal_subsample_repeated,
-)
 
 
 class Compose:
@@ -151,7 +142,7 @@ class UniformTemporalSubsample(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = uniform_temporal_subsample(
+        target['video'] = transforms_impl.functional.uniform_temporal_subsample(
             target['video'], self._num_samples, self._temporal_dim)
         return target
 
@@ -175,7 +166,7 @@ class UniformTemporalSubsampleRepeated(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = uniform_temporal_subsample_repeated(
+        target['video'] = transforms_impl.functional.uniform_temporal_subsample_repeated(
             target['video'], self._frame_ratios, self._temporal_dim
         )
         return target
@@ -202,7 +193,7 @@ class ShortSideScale(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'] = short_side_scale(
+        target['video'] = transforms_impl.functional.short_side_scale(
             target['video'], self._size, self._interpolation, self._backend
         )
         return target
@@ -229,7 +220,7 @@ class ShortSideScaleWithBoxes(torch.nn.Module):
         Args:
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
-        target['video'], target['bbox'] = short_side_scale_with_boxes(
+        target['video'], target['bbox'] = transforms_impl.functional.short_side_scale_with_boxes(
             target['video'], target['bbox'], self._size, self._interpolation, self._backend
         )
         return target
@@ -261,7 +252,7 @@ class RandomCropVideoWithBoxes(torch.nn.Module):
         
         # Calculate original box areas
         original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-        cropped_x, cropped_boxes = random_crop_with_boxes(
+        cropped_x, cropped_boxes = transforms_impl.functional.random_crop_with_boxes(
             x, self._size, boxes
         )
         
@@ -328,7 +319,7 @@ class BoxDependentCropVideoWithBoxes(torch.nn.Module):
         # Calculate original box areas
         original_areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         
-        cropped_x, cropped_boxes = crop_with_boxes(
+        cropped_x, cropped_boxes = transforms_impl.functional.crop_with_boxes(
             x, self._size, boxes, x_offset=x_offset, y_offset=y_offset
         )
         
@@ -371,7 +362,7 @@ class RandomShortSideScale(torch.nn.Module):
             x (torch.Tensor): video tensor with shape (C, T, H, W).
         """
         size = torch.randint(self._min_size, self._max_size + 1, (1,)).item()
-        return short_side_scale(
+        return transforms_impl.functional.short_side_scale(
             x, size, self._interpolation, self._backend
         )
 
@@ -394,7 +385,7 @@ class UniformCropVideo(torch.nn.Module):
         Args:
             x (Dict[str, torch.Tensor]): video clip dict.
         """
-        x[self._video_key] = uniform_crop(
+        x[self._video_key] = transforms_impl.functional.uniform_crop(
             x[self._video_key], self._size, x[self._aug_index_key]
         )
         return x
@@ -526,7 +517,7 @@ class RandomResizedCrop(torch.nn.Module):
         Args:
             x (torch.Tensor): Input video tensor with shape (C, T, H, W).
         """
-        return random_resized_crop(
+        return transforms_impl.functional.random_resized_crop(
             x,
             self._target_height,
             self._target_width,
