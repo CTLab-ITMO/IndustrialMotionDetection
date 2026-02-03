@@ -2,7 +2,7 @@
 import torch
 import numpy as np
 import torchvision.transforms
-import src.transforms_impl.functional as transforms_impl
+from . import functional as transforms_impl
 from torchvision.transforms import _functional_video as F
 from typing import Callable, Dict, List, Optional, Tuple
 
