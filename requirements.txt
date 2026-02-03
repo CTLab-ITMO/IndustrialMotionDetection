@@ -29,3 +29,4 @@ decord==0.6.0
 av==16.1.0
 fvcore==0.1.5.post20221221
 iopath==0.1.10
+portalocker==3.2.0
