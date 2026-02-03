@@ -7,8 +7,8 @@ from typing import BinaryIO, Dict, List, Optional, Tuple, Union
 import av
 import numpy as np
 import torch
-from video.encoded_video import EncodedVideo
-from logger import Logger
+from src.video.encoded_video import EncodedVideo
+from src.logger import Logger
 
 from .utils import pts_to_secs, secs_to_pts, thwc_to_cthw
 
