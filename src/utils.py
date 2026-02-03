@@ -119,3 +119,7 @@ def get_leaf_dirs(root_folder: str) -> list:
     """
     return [root for root, dirs, _ in os.walk(root_folder)
             if len(dirs) == 0]
+
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
