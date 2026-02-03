@@ -3,12 +3,10 @@
 import io
 import pathlib
 from typing import Any, Dict
-
 from iopath.common.file_io import g_pathmgr
-from video.decoder import DecoderType
-
-from .video import Video
-from logger import Logger
+from src.logger import Logger
+from src.video.video import Video
+from src.video.decoder import DecoderType
 
 
 SHOW_LOG = True
