@@ -1,9 +1,9 @@
---extra-index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cu121
 
 # torch dependencies
-torch==2.6.0+cpu
-torchvision==0.21.0+cpu
-torchaudio==2.6.0+cpu
+torch==2.6.0+cu121
+torchvision==0.21.0+cu121
+torchaudio==2.6.0+cu121
 
 tqdm==4.67.1
 numpy==1.26.4
