@@ -7,7 +7,7 @@ import numpy as np
 from ultralytics import YOLO
 from typing import Tuple
 from src.models.box_list import BoxList
-from transforms_impl.transforms import (
+from src.transforms_impl.transforms import (
     Compose,
     ShortSideScaleWithBoxes,
 )
