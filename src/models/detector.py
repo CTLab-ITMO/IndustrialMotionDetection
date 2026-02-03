@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 from ultralytics import YOLO
-from models.box_list import BoxList
 from typing import Tuple
+from src.models.box_list import BoxList
 from transforms_impl.transforms import (
     Compose,
     ShortSideScaleWithBoxes,
