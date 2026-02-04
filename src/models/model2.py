@@ -27,7 +27,7 @@ def configure_detection_head(embed_dim, num_class):
     head_output_size: Tuple[int] = (1, 1, 1)
 
     # Head configs.
-    head_activation: Callable = None
+    head_activation: Callable = nn.Sigmoid # from notebook, from file: None
     head_output_with_global_average: bool = True
     head_spatial_resolution: Tuple[int] = (7, 7)
     head_spatial_scale: float = 1.0 / 16.0
@@ -324,7 +324,8 @@ class PatchEmbed(nn.Module):
         assert H == self.img_size[0] and W == self.img_size[
             1], f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
         # b, c, l -> b, l, c
-        x = self.proj(x).flatten(2).transpose(1, 2)
+        x = self.proj(x) # from notebook, from file below
+        # x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
 
@@ -418,8 +419,7 @@ class VideoMAEV2(nn.Module):
                 init_values=init_values,
                 cos_attn=cos_attn) for i in range(depth)
         ])
-        self.norm = nn.Identity() if use_mean_pooling else norm_layer(
-            embed_dim)
+        self.norm = nn.Identity() if use_mean_pooling else norm_layer(embed_dim)
         self.fc_norm = norm_layer(embed_dim) if use_mean_pooling else None
         # self.head_dropout = nn.Dropout(head_drop_rate)
         # self.head = nn.Linear(
@@ -510,7 +510,7 @@ class VideoMAEV2(nn.Module):
 
     def forward(self, x, proposals):
         x = self.forward_features(x)
-        print(f"{x.shape=}")
+        # print(f"features {x.shape=}")
         # x = self.head_dropout(x)
         # x = self.head(x)
         proposals = self.convert_to_roi_format(proposals, x.dtype, x.device)
