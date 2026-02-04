@@ -325,6 +325,7 @@ class PatchEmbed(nn.Module):
             1], f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
         # b, c, l -> b, l, c
         x = self.proj(x) # from notebook, from file below
+        print(f"{self.__class__.__name__} {x.shape=}")
         # x = self.proj(x).flatten(2).transpose(1, 2)
         return x
 
