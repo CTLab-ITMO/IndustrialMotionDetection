@@ -52,12 +52,8 @@ pip install --no-deps -r requirements.txt
 - Использование смартфона/телефона
 - Взаимодействие с другими людьми (разговор, рукопожатие, объятие)
 
-#### Полезные материалы
-
 - `notebooks/video_mae_pretrain.ipynb` - запуск предобучения VideoMAE
-
 - `notebooks/videomae-train.ipynb` - обучение локализации для VideoMAE + YOLO
-
 - `notebooks/meva-processed-eda.ipynb` - EDA набора данных MEVA
 
 ### **Модель ActionFormer**
@@ -69,7 +65,7 @@ pip install --no-deps -r requirements.txt
 - Рукопожатие
 - Нахождение человека в запретной зоне.
 
-В качестве входных данных модель использует скелетные точки, полученные с помощью YOLOv11 Pose Estimation, DepthAnything и карты сегментации объектов с помощью CLIPSeg. 
+В качестве входных данных модель использует скелетные точки, полученные с помощью YOLOv11 Pose Estimation, DepthAnything и карты сегментации объектов с помощью CLIPSeg.
 
 - `src/models/action_former/train_test_utils.py` - код для обучения ActionFormer
 - `src/models/action_former/action_former.py` - код модели ActionFormer
