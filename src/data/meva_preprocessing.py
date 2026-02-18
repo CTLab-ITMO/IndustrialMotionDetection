@@ -186,6 +186,132 @@ class MEVAProcessor:
 
         merged_ranges.append((current_start, current_end))
         return merged_ranges
+    
+    def process_annotations_by_activities(self,
+                            video_root: str,
+                            annotation_root: str,
+                            result_folder: str) -> pd.DataFrame:
+        rows = []
+        for fname in tqdm(os.listdir(annotation_root),
+                          desc='Iterating dir with annotations...',
+                          leave=False):
+            # fname should end with .activities.yml
+            if not fname.endswith('.activities.yml'):
+                continue
+
+            annotation_filename = fname.replace('.activities.yml', '')
+
+            activities, frame_to_activity_ids = self.find_activities(
+                annotation_root, annotation_filename)
+            
+            if len(activities) == 0:
+                self.logger.info(f'{annotation_filename} empty')
+                continue
+
+            geometries, track_bbox_area = self.parse_geometries(
+                annotation_root, annotation_filename)
+            
+            # filter tracks with box area >= 10000
+            filtered_tracks = set([id for id, area in track_bbox_area.items() 
+                                   if area >= self.bbox_area_limit])
+            # filter activities before creating video: reduce memory usage
+            activities = {id: activity for id, activity in activities.items()
+                          if filtered_tracks.intersection(activity['actors'])}
+            
+            if len(activities) == 0:
+                self.logger.info(f'After filtering bboxes {annotation_filename} empty')
+                continue
+            
+            video_path = os.path.join(video_root, f"{annotation_filename}.r13.avi")
+            if not os.path.exists(video_path):
+                self.logger.warning(f"Video not found: {video_path}")
+                continue
+            
+            # read video from MEVA dataset
+            cap = cv2.VideoCapture(video_path)
+            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = int(cap.get(cv2.CAP_PROP_FPS))
+            length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            for activity_id, activity in activities.items():
+                action_category = activity['action_category']
+                start_frame = activity['start_frame']
+                end_frame = activity['end_frame']
+
+                # create category folder
+                category_folder = os.path.join(result_folder, action_category)
+                os.makedirs(category_folder, exist_ok=True)
+
+                output_video_path = os.path.join(
+                    category_folder,
+                    f"{annotation_filename}_frange{start_frame}-{end_frame}.avi"
+                )
+
+                if os.path.exists(output_video_path):
+                    continue
+
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+
+                cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+                for frame_num in range(start_frame, end_frame):
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                
+                    temporal_rows = {}
+
+                    for actor_id in activity['actors']:
+                        coords = geometries.get((actor_id, frame_num), '').split()
+                        if len(coords) != 4:
+                            continue
+
+                        xmin, ymin, xmax, ymax = map(int, coords)
+                        bbox_area = (xmax - xmin) * (ymax - ymin)
+
+                        if bbox_area < self.bbox_area_limit:
+                            continue
+
+                        temporal_rows[actor_id] = {
+                            'video_path': get_last_n_path_elements(output_video_path, 3),
+                            'keyframe_id': frame_num - start_frame,
+                            'track_id': actor_id,
+                            'action_category': action_category,
+                            'xmin': xmin,
+                            'ymin': ymin,
+                            'xmax': xmax,
+                            'ymax': ymax
+                        }
+
+                    # draw bboxes on video
+                    if self.display_annotations:
+                        for r in temporal_rows.values():
+                            cv2.putText(img=frame, 
+                                        text=r['action_category'], 
+                                        org=(20, 50), 
+                                        fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                                        fontScale=1, 
+                                        color=(0, 255, 0), 
+                                        thickness=2)
+                            cv2.rectangle(img=frame, 
+                                            pt1=(r['xmin'], r['ymin']), 
+                                            pt2=(r['xmax'], r['ymax']), 
+                                            color=(0, 255, 0), 
+                                            thickness=2)
+
+                    rows.extend(list(temporal_rows.values()))
+                    out.write(frame)
+
+                out.release()
+            
+            cap.release()
+
+            self.logger.info(f"Saved annotated video: {output_video_path}")
+
+        return pd.DataFrame(rows)
+
 
     def process_annotations(self,
                             video_root: str,
@@ -457,7 +583,7 @@ class MEVAProcessor:
             video_result_folder = os.path.join(self.result_folder, date)
             os.makedirs(video_result_folder, exist_ok=True)
 
-            annotations_df = self.process_annotations(
+            annotations_df = self.process_annotations_by_activities(
                 curr_video_dir, curr_annotation_root,
                 video_result_folder)
 
