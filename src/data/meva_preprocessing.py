@@ -275,7 +275,7 @@ class MEVAProcessor:
                             continue
 
                         temporal_rows[actor_id] = {
-                            'video_path': get_last_n_path_elements(output_video_path, 3),
+                            'video_path': get_last_n_path_elements(output_video_path, 4),
                             'keyframe_id': frame_num - start_frame,
                             'track_id': actor_id,
                             'action_category': action_category,
@@ -580,11 +580,12 @@ class MEVAProcessor:
                 f"\t time elapsed: {elapsed} sec"
             )
 
-            video_result_folder = os.path.join(self.result_folder, date)
+            video_result_folder = os.path.join(self.result_folder, 'videos', date)
             os.makedirs(video_result_folder, exist_ok=True)
 
             annotations_df = self.process_annotations_by_activities(
-                curr_video_dir, curr_annotation_root,
+                curr_video_dir, 
+                curr_annotation_root,
                 video_result_folder)
 
             all_annotations_df = pd.concat(
@@ -611,7 +612,7 @@ class MEVAProcessor:
         self.config_source.save()
             
         # split annotations into train and test subsets
-        self.split_train_test()
+        # self.split_train_test()
 
 
 def main(args):
