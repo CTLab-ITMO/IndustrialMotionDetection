@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import argparse
 import yaml
 import cv2
@@ -9,14 +10,13 @@ import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
-from config import YamlConfigReader
-from utils import (AverageMeter, 
+from src.config import YamlConfigReader
+from src.utils import (AverageMeter, 
                    get_size, 
                    is_awscli_installed, 
                    get_last_n_path_elements,
                    get_leaf_dirs)
-from logger import Logger
-import math
+from src.logger import Logger
 
 
 class MEVAProcessor:
